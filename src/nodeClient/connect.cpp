@@ -1,7 +1,7 @@
 /**
- * Filename: "katalyn.cpp"
+ * Filename: "connect.cpp"
  *
- * Description: This is the main function which instantiates a client in anakata
+ * Description: This is the main function which instantiates a connect node
  *
  * Author: Abhishek Shrivastava <abhishek.shrivastava.ts@gmail.com>
  **/
@@ -12,29 +12,25 @@ using namespace std;
 
 int main(int argc, const char *argv[])
 {
-  // eg. ./client_20172001 "Bob's Computer" 192.168.1.20 8754 192.168.1.2 8750 14000 ~/Desktop
-  if (argc != 8)
+  // eg. ./connect my_ip my_port friend_ip friend_port
+  if (argc != 5)
   {
-    cout << "Usage: " << argv[0] << " client_alias client_ip client_port server_ip server_port downloading_port client_root" << endl;
+    cout << "Usage: " << argv[0] << "my_ip my_port friend_ip friend_port" << endl;
     return 1;
   }
 
-  string c_alias  = argv[1];
-  string c_ip     = argv[2];
-  int c_port      = stoi(argv[3]);
-  string s_ip     = argv[4];
-  int s_port      = stoi(argv[5]);
-  int c_down_port = stoi(argv[6]);
-  string c_base   = argv[7];
+  string c_ip     = argv[1];
+  int c_port      = stoi(argv[2]);
+  string f_ip     = argv[3];
+  int f_port      = stoi(argv[4]);
 
-  nodeClient katalyn(c_alias, c_ip, c_port, s_ip, s_port, c_down_port, c_base);
+  nodeClient connect_node(c_ip, c_port, f_ip, f_port);
 
-  // navigate to the given base directory
-  chdir(c_base.c_str());
+  // navigate to the base directory
+  chdir(base_loc.c_str());
 
-  katalyn.sendPulse();
-
-  thread t(&nodeClient::startListen, katalyn);
+  // start listening thread
+  thread t(&nodeClient::startListen, connect_node);
   t.detach();
 
   string line;
@@ -65,50 +61,45 @@ int main(int argc, const char *argv[])
           // if we are downloading after a search
           if (tokens[0][3] == '[')
           {
-            katalyn.blackbox -> record("Get command for: " + tokens[0]  + " outfile  " + tokens[1]);
+            connect_node.blackbox -> record("Get command for: " + tokens[0]  + " outfile  " + tokens[1]);
 
             for (auto k : tokens)
               cout << k << endl;
 
-            if (katalyn.haveSearchResults)
+            if (connect_node.haveSearchResults)
             {
               string hit_n   = tokens[0];
               string outfile = tokens[1];
 
               sanitize(hit_n, '[');
               sanitize(hit_n, ']');
-              sanitize(hit_n, 'g');
-              sanitize(hit_n, 'e');
-              sanitize(hit_n, 't');
+              sanitize(hit_n, 'p');
+              sanitize(hit_n, 'u');
+              sanitize(hit_n, 's');
+              sanitize(hit_n, 'h');
 
               int hit_no = stoi(hit_n);
 
-              katalyn.downloadFile(hit_no, outfile);
+              connect_node.downloadFile(hit_no, outfile);
             }
             else
               cout << "No search results exist. Try again." << endl;
           }
           else
           {
-            if (tokens.size() != 6)
+            if (tokens.size() != 2)
             {
               cout << "FAILURE: Invalid Parameters" << endl;
               break;
             }
 
-            string client_alias  = tokens[1];
-            string relative_path = tokens[3];
-            string outfile       = tokens[5];
+            string filepath = tokens[1];
 
-            sanitize(client_alias, '"');
-            sanitize(client_alias, '\\');
-            sanitize(relative_path, '"');
-            sanitize(relative_path, '\\');
-            sanitize(outfile, '"');
-            sanitize(outfile, '\\');
+            sanitize(filepath, '"');
+            sanitize(filepath, '\\');
 
-            katalyn.blackbox -> record("Get command on " + client_alias + " path " + relative_path + " outputfile " + outfile);
-            katalyn.downloadFile(client_alias, relative_path, outfile);
+            connect_node.blackbox -> record("Get command on path " + filepath);
+            connect_node.downloadFile(filepath);
           }
         }
         break;
@@ -124,8 +115,8 @@ int main(int argc, const char *argv[])
           sanitize(file_share_path, '\\');
           sanitize(file_share_path, '"');
 
-          katalyn.blackbox -> record("Registering file: " + file_share_path + " on server");
-          katalyn.registerFile(file_share_path);
+          connect_node.blackbox -> record("Registering file: " + file_share_path + " on network");
+          connect_node.registerFile(file_share_path);
         }
         break;
       case DEL:
@@ -138,29 +129,10 @@ int main(int argc, const char *argv[])
 
           string file_share_path = tokens[1];
           sanitize(file_share_path, '\\');
-
           sanitize(file_share_path, '"');
 
-          katalyn.blackbox -> record("Deregistering file: " + file_share_path + " on server");
-          katalyn.deregisterFile(file_share_path);
-        }
-        break;
-      case EXEC:
-        {
-          if (tokens.size() != 4)
-          {
-            cout << "FAILURE: Invalid Parameters";
-            break;
-          }
-          string rpc_alias     = tokens[1];
-          string shell_command = tokens[3];
-
-          sanitize(rpc_alias, '"');
-          sanitize(rpc_alias, '\\');
-          sanitize(shell_command, '"');
-
-          katalyn.blackbox -> record("Executing shell command " + shell_command + " on " + rpc_alias);
-          katalyn.exec_command(rpc_alias, shell_command);
+          connect_node.blackbox -> record("Deregistering file: " + file_share_path + " on network");
+          connect_node.deregisterFile(file_share_path);
         }
         break;
       case SEARCH:
@@ -175,8 +147,24 @@ int main(int argc, const char *argv[])
 
           sanitize(file_name, '"');
 
-          katalyn.blackbox -> record("Searching for file: " + file_name + " on server");
-          katalyn.searchFile(file_name);
+          connect_node.blackbox -> record("Searching for file: " + file_name + " on server");
+          connect_node.searchFile(file_name);
+        }
+        break;
+      case EXIT:
+        {
+          cout << "EXIT" << endl;
+        }
+        break;
+      case SHOW:
+        {
+          cout << "SHOW" << endl;
+          // TODO SHOT FT AND FILE MAP
+        }
+        break;
+      case STABLIZE:
+        {
+          cout << "STABLIZE" << endl;
         }
         break;
       default:

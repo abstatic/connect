@@ -93,21 +93,21 @@ void sanitize(string& str, char c)
  */
 int interpret_command(string cmd_str)
 {
-  if (cmd_str == "get")
+  if (cmd_str == "pull")
     return GET;
-  else if (cmd_str == "share")
+  else if (cmd_str == "push")
     return SHARE;
-  else if (cmd_str == "del")
+  else if (cmd_str == "remove")
     return DEL;
-  else if (cmd_str == "exec")
-    return EXEC;
   else if (cmd_str == "search")
     return SEARCH;
-  else if (cmd_str == "ip")
-    return IP;
-  else if (cmd_str == "heartbeat")
-    return PULSE;
-  else if (cmd_str.find("get[") == 0)
+  else if (cmd_str == "show")
+    return SHOW;
+  else if (cmd_str == "stablize")
+    return STABLIZE;
+  else if (cmd_str == "exit")
+    return EXIT;
+  else if (cmd_str.find("pull[") == 0)
     return GET;
   else
     return 0;

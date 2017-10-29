@@ -11,10 +11,10 @@
 #define GET 1
 #define SHARE 2
 #define DEL 3
-#define EXEC 4
+#define EXIT 4
 #define SEARCH 5
-#define IP 6
-#define PULSE 7
+#define SHOW 6
+#define STABLIZE 7
 
 using namespace std;
 
@@ -32,8 +32,18 @@ protected:
   std::ofstream log_fp;
 };
 
+struct node_details
+{
+  int port;
+  string ip;
+};
+
+
 void tokenize(string str, vector<string>& tokens, const string& delimiters = " ");
 void sanitize(string&, char); // remove a char from string
 int interpret_command(string); // interpret a command string
 string getEnv(const string& var); // getEnvironment variable
+
+string base_loc = "~/connect_files";
+
 #endif /* ifndef logger */
