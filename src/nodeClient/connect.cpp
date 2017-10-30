@@ -10,8 +10,11 @@
 
 using namespace std;
 
+string base_loc;
+
 int main(int argc, const char *argv[])
 {
+  base_loc = "~/connect";
   // eg. ./connect my_ip my_port friend_ip friend_port
   if (argc != 5)
   {

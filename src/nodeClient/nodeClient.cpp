@@ -27,6 +27,10 @@ nodeClient::nodeClient(string c_ip, int c_port, string f_ip="", int f_port=0)
   haveSearchResults = false;
   my_node_id = getNodeID(my_ip, my_port);
 
+  self.ip = my_ip;
+  self.port = my_port;
+  self.node_id = my_node_id;
+
   // TODO: add code if directory doesn't exist
 
   // TODO: Initialize successor, predecessor, fingertable, stablize here.
@@ -232,6 +236,8 @@ void nodeClient::searchFile(string file_name)
   string cmd_name = "search";
   string command = cmd_name + "`" + file_name + "`";
   string result = sendMessage(command);
+
+  int file_id = getFileID(file_name);
 
   // TODO
 }
@@ -440,7 +446,7 @@ node_details nodeClient::lookup_ft(string command)
   return nd;
 }
 
-int getNodeID(string ip, int port)
+int nodeClient::getNodeID(string ip, int port)
 {
   string op = ip + to_string(port);
   unsigned char hash[SHA_DIGEST_LENGTH];
@@ -456,7 +462,7 @@ int getNodeID(string ip, int port)
   return n_id;
 }
 
-int getFileID(string fileName)
+int nodeClient::getFileID(string fileName)
 {
   string op = fileName;
   unsigned char hash[SHA_DIGEST_LENGTH];
@@ -472,7 +478,41 @@ int getFileID(string fileName)
   return n_id;
 }
 
-node_details* join(node_details frnd)
+node_details* nodeClient::join(node_details frnd)
 {
+  node_details* ret = new node_details;
+  return ret;
+}
 
+node_details* nodeClient::find_successor(int id)
+{
+  node_details n_dash = find_predecessor(id);
+  return n_dash.successor;
+}
+
+node_details nodeClient::find_predecessor(int id)
+{
+  if (my_node_id ==  successor->node_id)
+    return self;
+  node_details temp = self;
+
+  while (id > temp.node_id && id <= successor->node_id)
+  {
+    temp = closest_preceding_finger(id);
+  }
+
+  return temp;
+}
+
+node_details nodeClient::closest_preceding_finger(int id)
+{
+  int limit = LEN * 4;
+  for (auto i = my_fingertable.rbegin(); i != my_fingertable.rend(); i++)
+  {
+    int s_val = (i->second).successor;
+
+    if (s_val > my_node_id && s_val < id)
+      return i->second.s_d;
+  }
+  return self;
 }

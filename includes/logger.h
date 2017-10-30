@@ -62,6 +62,6 @@ string getEnv(const string& var); // getEnvironment variable
 int hex2dec(string);
 string GetHexRepresentation(const unsigned char *, size_t);
 
-string base_loc = "~/connect_files";
+extern string base_loc;
 
 #endif /* ifndef logger */

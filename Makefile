@@ -2,7 +2,8 @@
 ## Author- Abhishek Shrivastava <abhishek.shrivastava.ts@gmail.com)
 
 CC = g++
-CC_OPTIONS = -ggdb3 -Wall -std=c++11 -lpthread
+# CC_OPTIONS = -ggdb3 -Wall -std=c++11 -lpthread
+CC_OPTIONS = -ggdb3 -w -std=c++11 -lpthread -lcrypto
 CFLAGS = $(CC_OPTIONS)
 
 ODIR = obj
@@ -25,8 +26,8 @@ config:
 
 # this target compiles and links the client
 client: clean
-	$(CC) $(CC_OPTIONS) -c $(SDIR)/$(CLIENT)/nodeClient.cpp -o $(ODIR)/nodeClient.o
 	$(CC) $(CC_OPTIONS) -c $(SDIR)/$(CLIENT)/connect.cpp -o $(ODIR)/connect.o
+	$(CC) $(CC_OPTIONS) -c $(SDIR)/$(CLIENT)/nodeClient.cpp -o $(ODIR)/nodeClient.o
 	$(CC) $(CC_OPTIONS) -c $(SDIR)/logger.cpp -o $(ODIR)/logger.o
 	$(CC) $(CC_OPTIONS) $(ODIR)/*.o  -o $(BUILD)/$@
 	cp $(BUILD)/* $(BIN)/

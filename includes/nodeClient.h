@@ -32,13 +32,12 @@ public:
   // chord methods
   node_details find_successor(int);
   node_details find_predecessor(int);
-  node_details closest_precedin_finger(int);
+  node_details closest_preceding_finger(int);
   node_details lookup_ft(string);
   node_details* join(node_details);
 
   int getNodeID(string, int);
   int getFileID(string);
-  int hex2dec(char*);
 
 
   // variable declarations;
@@ -49,13 +48,13 @@ public:
   vector <string> search_results; // each string is a search result
   queue<string> requests; // queue for pending requests
 
-
   // stores int value of the hash M bits, value will be struct
-  unordered_map<int, vector<file_details> > my_filetable;
-  unordered_map<int, ft_struct> my_fingertable;
+  map<int, vector<file_details> > my_filetable;
+  map<int, ft_struct> my_fingertable;
 
   node_details* successor;
   node_details* predecessor;
+  node_details self;
 
   Logger* blackbox; // logger for this class
 
