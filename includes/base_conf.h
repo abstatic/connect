@@ -10,6 +10,8 @@
 #define base_h 1
 
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <cstring>
 #include <errno.h>
 #include <fstream>
@@ -33,5 +35,6 @@
 #include <thread>
 #include <queue>
 #include <openssl/sha.h>
+#include <cmath>
 #endif /* ifndef base_h */
 

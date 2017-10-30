@@ -125,3 +125,51 @@ string GetEnv( const string & var ) {
          return val;
      }
 }
+
+string GetHexRepresentation(const unsigned char * Bytes, size_t Length)
+{
+    std::ostringstream os;
+    os.fill('0');
+    os<<std::hex;
+    for(const unsigned char * ptr=Bytes;ptr<Bytes+Length;ptr++)
+        os<<std::setw(2)<<(unsigned int)*ptr;
+    return os.str();
+}
+
+/**
+ * Converts given hex char array to equivalent decimal number depending on the
+ * value of M
+ */
+int hex2dec(string hex)
+{
+    string hexstr;
+    int length = 4;
+    const int base = 16;     // Base of Hexadecimal Number
+    int decnum = 0;
+    int i;
+
+    // Now Find Hexadecimal Number
+    hexstr = hex;
+    for (i = 0; i < length; i++)
+    {
+      // Compare *hexstr with ASCII values
+      if (hexstr[i] >= 48 && hexstr[i] <= 57)   // is *hexstr Between 0-9
+      {
+          decnum += (((int)(hexstr[i])) - 48) * pow(base, length - i - 1);
+      }
+      else if ((hexstr[i] >= 65 && hexstr[i] <= 70))   // is *hexstr Between A-F
+      {
+          decnum += (((int)(hexstr[i])) - 55) * pow(base, length - i - 1);
+      }
+      else if (hexstr[i] >= 97 && hexstr[i] <= 102)   // is *hexstr Between a-f
+      {
+          decnum += (((int)(hexstr[i])) - 87) * pow(base, length - i - 1);
+      }
+      else
+      {
+        cout << endl << hexstr[i] << endl;
+          cout<<"Invalid Hexadecimal Number \n";
+      }
+    }
+    return decnum;
+}

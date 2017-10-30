@@ -16,7 +16,7 @@
 #define SHOW 6
 #define STABLIZE 7
 
-#define BITS 10
+#define LEN 4
 
 using namespace std;
 
@@ -59,6 +59,8 @@ void tokenize(string str, vector<string>& tokens, const string& delimiters = " "
 void sanitize(string&, char); // remove a char from string
 int interpret_command(string); // interpret a command string
 string getEnv(const string& var); // getEnvironment variable
+int hex2dec(string);
+string GetHexRepresentation(const unsigned char *, size_t);
 
 string base_loc = "~/connect_files";
 

@@ -5,8 +5,8 @@
  *
  * Author: Abhishek Shrivastava <abhishek.shrivastava.ts@gmail.com>
  **/
-#include "../../includes/nodeClient.h"
 #include "../../includes/logger.h"
+#include "../../includes/nodeClient.h"
 
 using namespace std;
 
@@ -32,12 +32,13 @@ nodeClient::nodeClient(string c_ip, int c_port, string f_ip="", int f_port=0)
   // TODO: Initialize successor, predecessor, fingertable, stablize here.
   if (f_ip == "")
   {
-    successor.port = my_port;
-    successor.ip = my_ip;
-    successor.node_id = my_node_id;
-    predecessor.port = my_port;
-    predecessor.ip = my_ip;
-    predecessor.node_id = my_node_id;
+    successor = new node_details;
+    successor->port = my_port;
+    successor->ip = my_ip;
+    successor->node_id = my_node_id;
+    predecessor->port = my_port;
+    predecessor->ip = my_ip;
+    predecessor->node_id = my_node_id;
   }
   else
   {
@@ -435,6 +436,7 @@ node_details nodeClient::lookup_ft(string command)
   node_details nd;
   nd.ip = "RANDOM IP ADDRESS";
   nd.port = 123;
+  nd.node_id = 123;
   return nd;
 }
 
@@ -443,22 +445,34 @@ int getNodeID(string ip, int port)
   string op = ip + to_string(port);
   unsigned char hash[SHA_DIGEST_LENGTH];
 
-  const unsigned char* s = reinterpret_cast<const unsigned char *>(op.c_str());//op.c_str();
+  const unsigned char* s = reinterpret_cast<const unsigned char *>(op.c_str());
   cout << strlen(op.c_str()) << endl;
   SHA1(s,  strlen(op.c_str()), hash);
 
-  // do some stuff with the hash
-  char out[61]; //null terminator
+  string hex = GetHexRepresentation(hash, SHA_DIGEST_LENGTH);
 
-  for (int i = 0; i < 20; i++) 
-    snprintf(out+i*3, 4, "%02x", hash[i]);
-
-  int n_id = hex2dec(out);
+  int n_id = hex2dec(hex);
 
   return n_id;
 }
 
 int getFileID(string fileName)
+{
+  string op = fileName;
+  unsigned char hash[SHA_DIGEST_LENGTH];
+
+  const unsigned char* s = reinterpret_cast<const unsigned char *>(op.c_str());
+  cout << strlen(op.c_str()) << endl;
+  SHA1(s,  strlen(op.c_str()), hash);
+
+  string hex = GetHexRepresentation(hash, SHA_DIGEST_LENGTH);
+
+  int n_id = hex2dec(hex);
+
+  return n_id;
+}
+
+node_details* join(node_details frnd)
 {
 
 }

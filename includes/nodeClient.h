@@ -25,7 +25,7 @@ public:
   void deregisterFile(string); // remove a file from trackr;
   void start(void); // start the listen server
   string sendMessage(string); // send a simple message to server
-  void stabilize(void); // sends out the heartbeat to server
+  void stabilize(void); // runs as a thread;
   void startListen(void); // start listening foir requests on a port
   void handleRequest(int); // this method handles a client request on client
 
@@ -34,7 +34,7 @@ public:
   node_details find_predecessor(int);
   node_details closest_precedin_finger(int);
   node_details lookup_ft(string);
-  node_details join(node_details);
+  node_details* join(node_details);
 
   int getNodeID(string, int);
   int getFileID(string);
@@ -54,8 +54,8 @@ public:
   unordered_map<int, vector<file_details> > my_filetable;
   unordered_map<int, ft_struct> my_fingertable;
 
-  node_details successor;
-  node_details predecessor;
+  node_details* successor;
+  node_details* predecessor;
 
   Logger* blackbox; // logger for this class
 
