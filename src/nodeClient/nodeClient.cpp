@@ -20,16 +20,35 @@ using namespace std;
  * @param f_port      = port at which the friend is operating
  *
  */
-nodeClient::nodeClient(string c_ip, int c_port, string f_ip, int f_port)
+nodeClient::nodeClient(string c_ip, int c_port, string f_ip="", int f_port=0)
 {
   my_ip = c_ip;
   my_port = c_port;
   haveSearchResults = false;
+  my_node_id = getNodeID(my_ip, my_port);
 
   // TODO: add code if directory doesn't exist
-  // TODO: AUTOMATIC PORT
 
   // TODO: Initialize successor, predecessor, fingertable, stablize here.
+  if (f_ip == "")
+  {
+    successor.port = my_port;
+    successor.ip = my_ip;
+    successor.node_id = my_node_id;
+    predecessor.port = my_port;
+    predecessor.ip = my_ip;
+    predecessor.node_id = my_node_id;
+  }
+  else
+  {
+    node_details my_friend;
+    my_friend.port = f_port;
+    my_friend.ip = f_ip;
+    my_friend.node_id = getNodeID(f_ip, f_port);
+
+    predecessor = NULL;
+    successor = join(my_friend);
+  }
 
   // if TODO base loc doesn't exits then create
   blackbox = new Logger(base_loc + "/node_log");
@@ -417,4 +436,29 @@ node_details nodeClient::lookup_ft(string command)
   nd.ip = "RANDOM IP ADDRESS";
   nd.port = 123;
   return nd;
+}
+
+int getNodeID(string ip, int port)
+{
+  string op = ip + to_string(port);
+  unsigned char hash[SHA_DIGEST_LENGTH];
+
+  const unsigned char* s = reinterpret_cast<const unsigned char *>(op.c_str());//op.c_str();
+  cout << strlen(op.c_str()) << endl;
+  SHA1(s,  strlen(op.c_str()), hash);
+
+  // do some stuff with the hash
+  char out[61]; //null terminator
+
+  for (int i = 0; i < 20; i++) 
+    snprintf(out+i*3, 4, "%02x", hash[i]);
+
+  int n_id = hex2dec(out);
+
+  return n_id;
+}
+
+int getFileID(string fileName)
+{
+
 }

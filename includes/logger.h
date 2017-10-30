@@ -16,6 +16,8 @@
 #define SHOW 6
 #define STABLIZE 7
 
+#define BITS 10
+
 using namespace std;
 
 class Logger
@@ -36,8 +38,22 @@ struct node_details
 {
   int port;
   string ip;
+  int node_id;
 };
 
+struct file_details
+{
+  int port;
+  string ip;
+  string path;
+};
+
+struct ft_struct
+{
+  pair<int, int> interval;
+  int successor;
+  node_details s_d;
+};
 
 void tokenize(string str, vector<string>& tokens, const string& delimiters = " ");
 void sanitize(string&, char); // remove a char from string

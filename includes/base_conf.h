@@ -32,5 +32,6 @@
 #include <netdb.h>
 #include <thread>
 #include <queue>
+#include <openssl/sha.h>
 #endif /* ifndef base_h */
 

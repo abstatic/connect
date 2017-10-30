@@ -29,17 +29,33 @@ public:
   void startListen(void); // start listening foir requests on a port
   void handleRequest(int); // this method handles a client request on client
 
-  node_details lookup_ft(string message);
+  // chord methods
+  node_details find_successor(int);
+  node_details find_predecessor(int);
+  node_details closest_precedin_finger(int);
+  node_details lookup_ft(string);
+  node_details join(node_details);
+
+  int getNodeID(string, int);
+  int getFileID(string);
+  int hex2dec(char*);
+
 
   // variable declarations;
   string my_ip; // the ip of the client
   int my_port; // port number of client
+  int my_node_id;
   bool haveSearchResults; // bool indicating if search results are there or not
   vector <string> search_results; // each string is a search result
   queue<string> requests; // queue for pending requests
 
-  unordered_map<string, vector<string> > my_filetable;
-  unordered_map<string, string> my_fingertable;
+
+  // stores int value of the hash M bits, value will be struct
+  unordered_map<int, vector<file_details> > my_filetable;
+  unordered_map<int, ft_struct> my_fingertable;
+
+  node_details successor;
+  node_details predecessor;
 
   Logger* blackbox; // logger for this class
 
