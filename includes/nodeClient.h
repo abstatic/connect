@@ -25,7 +25,7 @@ public:
   void deregisterFile(string); // remove a file from trackr;
   void start(void); // start the listen server
   string sendMessage(string); // send a simple message to server
-  void stablize(void); // sends out the heartbeat to server
+  void stabilize(void); // sends out the heartbeat to server
   void startListen(void); // start listening foir requests on a port
   void handleRequest(int); // this method handles a client request on client
 
