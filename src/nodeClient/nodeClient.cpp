@@ -219,7 +219,7 @@ void nodeClient::searchFile(string file_name)
 /**
  * This method is used to trigger stablize on this node TODO
  */
-void nodeClient::stablize(void)
+void nodeClient::stabilize(void)
 {
   // TODO
   cout << "Stablize called " << endl;
