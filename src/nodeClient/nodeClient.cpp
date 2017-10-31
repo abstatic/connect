@@ -484,21 +484,34 @@ node_details* nodeClient::join(node_details frnd)
   return ret;
 }
 
-node_details* nodeClient::find_successor(int id)
+node_details nodeClient::find_successor(int id)
 {
+  node_details n_dash_successor;
   node_details n_dash = find_predecessor(id);
-  return n_dash.successor;
+  sendMessage("Instruction format to get successor");//Parse response, populate n_dash_successor 
+  return n_dash_successor; //TBD- Approaches- find n_dash successor in previous call or seperate call 
 }
 
 node_details nodeClient::find_predecessor(int id)
 {
+  bool flag = false;
   if (my_node_id ==  successor->node_id)
     return self;
-  node_details temp = self;
 
-  while (id > temp.node_id && id <= successor->node_id)
+  node_details temp = self;
+  node_details temp_successor = successor;
+
+
+  while (id <= temp.node_id || id > temp_successor->node_id)
   {
-    temp = closest_preceding_finger(id);
+    if(flag == false){
+      temp = closest_preceding_finger(id); //Searching in its own finger table
+      flag = true;
+    }else{
+      temp = closest_preceding_finger(id);// TO-DO make it RPC Call to temp finger's table
+    }
+    temp_successor = sendMessage("Instruction format to get successor");//Parse response, populate temp_successor 
+
   }
 
   return temp;
