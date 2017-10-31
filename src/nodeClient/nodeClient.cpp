@@ -358,11 +358,11 @@ void nodeClient::handleRequest(int connfd)
  *
  * @param message - The message to send to the server
  */
-string nodeClient::sendMessage(string message)
+string nodeClient::sendMessage(string message, node_details nd)
 {
   // ADD LOGIC FOR FINGER TABLE LOOKUP. BASED ON MESSAGE.
   // We find out which node will receive the message
-  node_details nd = lookup_ft(message);
+  //node_details nd = lookup_ft(message);
 
   int node_port = nd.port;
   string node_ip = nd.ip;
@@ -435,7 +435,8 @@ string nodeClient::sendMessage(string message)
     cout << "Try again." << endl;
     return "Fail";
   }
-
+  // TODO: Add the code to receive the response from peer server
+  // response will contain a string containing ip, port and identifier
   close(node_sockfd);
   return "True";
 }
@@ -508,12 +509,32 @@ void nodeClient::fix_fingers()
   (iter -> second).successor = temp.node_id;
 }
 
+//this wrapper function takes a command string (eg. "find_successor`id")
+node_details getNode(string command){
+  node_details n_dash_successor;
+  str response = sendMessage(command);//Parse response, populate n_dash_successor 
+  //resonse will be in format of ip`port`key
+  //so after tokenizing, vector tokens will be of size 3
+  //tokens[0] = ip of the successor
+  //tokens[1] = port of the successor
+  //tokens[2] = node_id of the successor
+  vector<string> tokens;
+  tokenize(respone, tokens, "`");
+  n_dash_successor.ip = tokens[0];
+  n_dash_successor.port = stoi(tokens[1], nullptr, 10);
+  n_dash_successor.node_id = stoi(tokens[2], nullptr, 10);
+  return n_dash_successor;
+}
+
 node_details nodeClient::find_successor(int id)
 {
   node_details n_dash_successor;
   node_details n_dash = find_predecessor(id);
-  sendMessage("n_dash.successor");//Parse response, populate n_dash_successor 
-  return n_dash_successor; //TBD- Approaches- find n_dash successor in previous call or seperate call 
+  
+  string command = "find_successor" + '`' + to_string(n_dash.node_id);
+  
+  //parse response and populate n_dash_successor
+  return getNode(command); //TBD- Approaches- find n_dash successor in previous call or seperate call 
 }
 
 node_details nodeClient::find_predecessor(int id)
