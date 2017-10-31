@@ -18,7 +18,7 @@ int main(int argc, const char *argv[])
   // eg. ./connect my_ip my_port friend_ip friend_port
   if (argc < 3)
   {
-    cout << "Usage: " << argv[0] << "my_ip my_port [friend_ip] [friend_port]" << endl;
+    cout << "Usage: " << argv[0] << " my_ip my_port [friend_ip] [friend_port]" << endl;
     return 1;
   }
 
