@@ -25,3 +25,4 @@ Request Format- IP`Command`Parameters - Separated by backticks
 Search- IP`search`TITLEHASH
 PUSH- IP`push`
 
+random
