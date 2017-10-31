@@ -16,16 +16,28 @@ int main(int argc, const char *argv[])
 {
   base_loc = "~/connect";
   // eg. ./connect my_ip my_port friend_ip friend_port
-  if (argc != 5)
+  if (argc < 3)
   {
-    cout << "Usage: " << argv[0] << "my_ip my_port friend_ip friend_port" << endl;
+    cout << "Usage: " << argv[0] << "my_ip my_port [friend_ip] [friend_port]" << endl;
     return 1;
   }
 
-  string c_ip     = argv[1];
-  int c_port      = stoi(argv[2]);
-  string f_ip     = argv[3];
-  int f_port      = stoi(argv[4]);
+  string c_ip, f_ip;
+  int c_port, f_port;
+
+  c_ip     = argv[1];
+  c_port   = stoi(argv[2]);
+
+  if (argc == 5)
+  {
+    f_ip     = argv[3];
+    f_port   = stoi(argv[4]);
+  }
+  else
+  {
+    f_ip = "";
+    f_port = 0;
+  }
 
   nodeClient connect_node(c_ip, c_port, f_ip, f_port);
 

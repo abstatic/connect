@@ -498,6 +498,7 @@ node_details nodeClient::find_predecessor(int id)
   if (my_node_id ==  successor->node_id)
     return self;
 
+  /*
   node_details temp = self;
   node_details temp_successor = successor;
 
@@ -513,8 +514,8 @@ node_details nodeClient::find_predecessor(int id)
     temp_successor = sendMessage("Instruction format to get successor");//Parse response, populate temp_successor 
 
   }
-
   return temp;
+*/
 }
 
 node_details nodeClient::closest_preceding_finger(int id)
