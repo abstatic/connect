@@ -35,6 +35,10 @@ public:
   node_details closest_preceding_finger(int);
   node_details lookup_ft(string);
   node_details* join(node_details);
+  node_details* notify(node_details);
+  void fix_fingers();
+  void init_finger_table(node_details);
+
 
   int getNodeID(string, int);
   int getFileID(string);

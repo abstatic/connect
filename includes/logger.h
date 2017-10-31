@@ -34,26 +34,26 @@ protected:
   std::ofstream log_fp;
 };
 
-struct node_details
+typedef struct node_details
 {
   int port;
   string ip;
   int node_id;
-};
+}node_details;
 
-struct file_details
+typedef struct file_details
 {
   int port;
   string ip;
   string path;
-};
+}file_details;
 
-struct ft_struct
+typedef struct ft_struct
 {
   pair<int, int> interval;
   int successor;
   node_details s_d;
-};
+}ft_struct;
 
 void tokenize(string str, vector<string>& tokens, const string& delimiters = " ");
 void sanitize(string&, char); // remove a char from string
