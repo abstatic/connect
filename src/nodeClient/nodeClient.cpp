@@ -557,14 +557,6 @@ node_details* nodeClient::join(node_details frnd)
   return ret;
 }
 
-node_details* nodeClient::find_successor(int id)
-{
-  node_details* n_dash_successor;
-  node_details* n_dash = find_predecessor(id);
-  sendMessage("Instruction format to get successor");//Parse response, populate n_dash_successor 
-  return n_dash_successor; //TBD- Approaches- find n_dash successor in previous call or seperate call 
-}
-
 void nodeClient::notify(node_details new_node)
 {
   if(predecessor == NULL || 
@@ -577,50 +569,43 @@ void nodeClient::fix_fingers()
   node_details temp;
   int random = rand() % (LEN*4);
   int index = pow(2,random) + my_node_id;
-  map<int,ft_struct>::iterator iter = my_fingertable.find(index);
+  ma1p<int,ft_struct>::iterator iter = my_fingertable.find(index);
   temp = find_successor(index);
   (iter -> second).s_d = temp;
   (iter -> second).successor = temp.node_id;
 }
 
 //convert the response string containing node info to node_details struct
-//resonse will be in format of ip`port`node_id
-//this wrapper function takes a command string (eg. "find_successor`id")
-node_details getNode(string command)
-{
-  node_details n_dash_successor;
-  str response = sendMessage(command);//Parse response, populate n_dash_successor 
-  //resonse will be in format of ip`port`key
+node_details* respToNode(string response){
+  //resonse will be in format of ip`port`node_id
   //so after tokenizing, vector tokens will be of size 3
   //tokens[0] = ip of the successor
   //tokens[1] = port of the successor
   //tokens[2] = node_id of the successor
-  node_details node;
+  node_details* node = new node_details;
   vector<string> tokens;
   tokenize(respone, tokens, "`");
-  node.ip = tokens[0];
-  node.port = stoi(tokens[1], nullptr, 10);
-  node.node_id = stoi(tokens[2], nullptr, 10);
+  node->ip = tokens[0];
+  node->port = stoi(tokens[1], nullptr, 10);
+  node->node_id = stoi(tokens[2], nullptr, 10);
   return node;
 }
 
 //this wrapper function takes a command string (eg. "find_successor`id")
 //node_id: id whose successor we want to find
 //connectToNode: we want to connect to this node to find the successor of "node_id"
-node_details getSuccessorNode(int node_id, node_details connectToNode){
+node_details* getSuccessorNode(int node_id, node_details connectToNode){
   string command = "find_successor" + '`' + to_string(node_id);
   str response = sendMessage(command, connectToNode);//Parse response, populate n_dash_successor 
-  node_details successorOfId = respToNode(response);
+  node_details *successorOfId = respToNode(response);
   return successorOfId;
 }
 
 node_details* nodeClient::find_successor(int id)
 {
-  node_details* n_dash_successor;
-  node_details* n_dash = find_predecessor(id);
-  
-  string command = "find_successor" + '`' + to_string(n_dash.node_id);
-  
+  node_details n_dash_successor;
+  node_details n_dash = find_predecessor(id);
+    
   //parse response and populate n_dash_successor
   return getSuccessorNode(n_dash.node_id, n_dash); //TBD- Approaches- find n_dash successor in previous call or seperate call 
 }
