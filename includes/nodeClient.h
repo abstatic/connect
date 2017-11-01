@@ -24,7 +24,7 @@ public:
   void searchFile(string); // search a file on trackr;
   void deregisterFile(string); // remove a file from trackr;
   void start(void); // start the listen server
-  string sendMessage(string, node_details); // send a simple message to server
+  string sendMessage(string, node_details*); // send a simple message to server
   void stabilize(void); // runs as a thread;
   void startListen(void); // start listening foir requests on a port
   void handleRequest(int); // this method handles a client request on client

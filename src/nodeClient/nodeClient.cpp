@@ -224,9 +224,9 @@ void nodeClient::registerFile(string fileSharePath)
 {
   string cmd_name = "share";
   string command = cmd_name + "`" + fileSharePath;
-  string reply = sendMessage(command);
-
-  if (reply.find("True") != -1)
+  // string reply = sendMessage(command);
+  // TODO
+  // if (reply.find("True") != -1)
     cout << "Command sent successfully" << endl;
 }
 
@@ -241,12 +241,13 @@ void nodeClient::deregisterFile(string fileSharePath)
 {
   string cmd_name = "del";
   string command_str = cmd_name + "`" + fileSharePath;
-  string reply = sendMessage(command_str);
+  // TODO
+  // string reply = sendMessage(command_str);
 
-  if (reply.find("True") != -1)
-    cout << "Command sent successfully" << endl;
-  else
-    cout << reply << endl;
+  // if (reply.find("True") != -1)
+    // cout << "Command sent successfully" << endl;
+  // else
+    // cout << reply << endl;
 }
 
 /**
@@ -259,11 +260,10 @@ void nodeClient::searchFile(string file_name)
 {
   string cmd_name = "search";
   string command = cmd_name + "`" + file_name + "`";
-  string result = sendMessage(command);
-
-  int file_id = getFileID(file_name);
-
   // TODO
+  // string result = sendMessage(command);
+
+  // int file_id = getFileID(file_name);
 }
 
 /**
@@ -271,12 +271,13 @@ void nodeClient::searchFile(string file_name)
  */
 void nodeClient::stabilize(void)
 {
-  node_details temp = sendMessage("successor.predecessor"); //TODO
-  if(temp.node_id > my_node_id && temp.node_id < successor->node_id){
-    *successor = temp;
-  }
-  sendMessage("successor.notify(n)"); //TODO
-  cout << "Stablize called " << endl;
+  // node_details temp = sendMessage("successor.predecessor"); //TODO
+
+  // if(temp.node_id > my_node_id && temp.node_id < successor->node_id){
+    // *successor = temp;
+  // }
+  // sendMessage("successor.notify(n)"); //TODO
+  // cout << "Stablize called " << endl;
 }
 
 /***
@@ -381,13 +382,11 @@ void nodeClient::handleRequest(int connfd)
  * available fingertables.
  *
  * @param message - The message to send to the server
+ * @param nd - the node pointer which contains the details about the node to
+ * which we ant tot send the message
  */
-string nodeClient::sendMessage(string message, node_details nd)
+string nodeClient::sendMessage(string message, node_details* nd)
 {
-  // ADD LOGIC FOR FINGER TABLE LOOKUP. BASED ON MESSAGE.
-  // We find out which node will receive the message
-  node_details* nd = lookup_ft(message);
-
   int node_port = nd->port;
   string node_ip = nd->ip;
 
@@ -459,10 +458,23 @@ string nodeClient::sendMessage(string message, node_details nd)
     cout << "Try again." << endl;
     return "Fail";
   }
+
   // TODO: Add the code to receive the response from peer server
   // response will contain a string containing ip, port and identifier
+  int i = 0;
+  int bytes_read;
+  do
+  {
+    char c;
+    bytes_read = recv(node_sockfd, &c, sizeof(char), 0);
+    recvBuff[i] = c;
+    i++;
+  } while (bytes_read != 0);
+
+  string s(recvBuff);
+
   close(node_sockfd);
-  return "True";
+  return s;
 }
 
 node_details* nodeClient::lookup_ft(string command)
@@ -475,6 +487,17 @@ node_details* nodeClient::lookup_ft(string command)
   return nd;
 }
 
+/**
+ * This function hashes the given node ip and port to generate a decimal node
+ * id
+ *
+ * Uses SHA1 hashing
+ *
+ * @param ip: ip address
+ * @param port: port
+ *
+ * @return: decimal index value
+ */
 int nodeClient::getNodeID(string ip, int port)
 {
   string op = ip + to_string(port);
@@ -490,6 +513,13 @@ int nodeClient::getNodeID(string ip, int port)
   return n_id;
 }
 
+/**
+ * This function hashes the file name
+ * Uses SHA1 hashing
+ *
+ * @param fileName: fileName to be hashed
+ * @return: decimal index value
+ */
 int nodeClient::getFileID(string fileName)
 {
   string op = fileName;
@@ -541,7 +571,8 @@ void nodeClient::fix_fingers()
 }
 
 //this wrapper function takes a command string (eg. "find_successor`id")
-node_details getNode(string command){
+node_details getNode(string command)
+{
   node_details n_dash_successor;
   str response = sendMessage(command);//Parse response, populate n_dash_successor 
   //resonse will be in format of ip`port`key
