@@ -107,6 +107,8 @@ int interpret_command(string cmd_str)
     return STABLIZE;
   else if (cmd_str == "exit")
     return EXIT;
+  else if (cmd_str == "find_successor")
+    return FIND_SUCCESSOR;
   else if (cmd_str.find("pull[") == 0)
     return GET;
   else

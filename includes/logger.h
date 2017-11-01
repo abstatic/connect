@@ -15,6 +15,7 @@
 #define SEARCH 5
 #define SHOW 6
 #define STABLIZE 7
+#define FIND_SUCCESSOR 8
 
 #define LEN 4
 

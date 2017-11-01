@@ -26,3 +26,11 @@ Search- IP`search`TITLEHASH
 PUSH- IP`push`
 
 random
+
+COMMAND-
+
+find_successor
+push
+pull
+notify
+

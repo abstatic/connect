@@ -380,7 +380,7 @@ void nodeClient::handleRequest(int connfd)
   int cmd = interpret_command(tokens[0]);
 
   // TODO handle the node requests here
-   if (cmd == GET)
+  if (cmd == GET)
   {
     string file_path = tokens[1];
 
@@ -413,9 +413,15 @@ void nodeClient::handleRequest(int connfd)
       close(connfd);
     }
    else
-   {
      printf("Error, couldn't open file [%s] to send!\n", full_file_path.c_str());
-   }
+  }
+  else if (cmd == FIND_SUCCESSOR)
+  {
+    // TODO HANDLE FIND SUCCESSOR
+    cout << "FIND SUCCESSOR" << endl;
+    string st = "MESSAGE RECEIVED";
+    send(connfd, st.c_str(), st.length(), 0);
+    close(connfd);
   }
 }
 
@@ -430,6 +436,8 @@ void nodeClient::handleRequest(int connfd)
  */
 string nodeClient::sendMessage(string message, node_details* nd)
 {
+  cout << "Sending out the message: " << message << endl;
+
   int node_port = nd->port;
   string node_ip = nd->ip;
 
@@ -516,6 +524,8 @@ string nodeClient::sendMessage(string message, node_details* nd)
 
   string s(recvBuff);
 
+  cout << "recv: " << s << endl;
+
   close(node_sockfd);
   return s;
 }
@@ -584,9 +594,6 @@ node_details* nodeClient::join(node_details* frnd)
   predecessor = NULL;
   node_details* ret = new node_details;
 
-  //RPC function call to frnd. frnd will call its find_successor method and return result
-  //sendMessage("frnd.find_successor(my_node_id)");
-
   ret = getSuccessorNode(my_node_id, frnd);
 
   return ret;
@@ -635,9 +642,13 @@ node_details* nodeClient::respToNode(string response)
 //connectToNode: we want to connect to this node to find the successor of "node_id"
 node_details* nodeClient::getSuccessorNode(int node_id, node_details* connectToNode)
 {
-  string command = "find_successor" + '`' + to_string(node_id);
+  string nid = to_string(node_id);
+  string command = string("find_successor`") + nid;
 
+  cout << "The command is : " << command << endl;
   string response = sendMessage(command, connectToNode);//Parse response, populate n_dash_successor 
+
+  cout << response;
 
   node_details *successorOfId = respToNode(response);
 
