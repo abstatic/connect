@@ -24,7 +24,7 @@ public:
   void searchFile(string); // search a file on trackr;
   void deregisterFile(string); // remove a file from trackr;
   void start(void); // start the listen server
-  string sendMessage(string); // send a simple message to server
+  string sendMessage(string, node_details); // send a simple message to server
   void stabilize(void); // runs as a thread;
   void startListen(void); // start listening foir requests on a port
   void handleRequest(int); // this method handles a client request on client
@@ -35,6 +35,10 @@ public:
   node_details* closest_preceding_finger(int);
   node_details* lookup_ft(string);
   node_details* join(node_details);
+  node_details* notify(node_details);
+  void fix_fingers();
+  void init_finger_table(node_details);
+
 
   int getNodeID(string, int);
   int getFileID(string);

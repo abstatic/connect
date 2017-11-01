@@ -271,7 +271,11 @@ void nodeClient::searchFile(string file_name)
  */
 void nodeClient::stabilize(void)
 {
-  // TODO
+  node_details temp = sendMessage("successor.predecessor"); //TODO
+  if(temp.node_id > my_node_id && temp.node_id < successor->node_id){
+    *successor = temp;
+  }
+  sendMessage("successor.notify(n)"); //TODO
   cout << "Stablize called " << endl;
 }
 
@@ -378,7 +382,7 @@ void nodeClient::handleRequest(int connfd)
  *
  * @param message - The message to send to the server
  */
-string nodeClient::sendMessage(string message)
+string nodeClient::sendMessage(string message, node_details nd)
 {
   // ADD LOGIC FOR FINGER TABLE LOOKUP. BASED ON MESSAGE.
   // We find out which node will receive the message
@@ -455,7 +459,8 @@ string nodeClient::sendMessage(string message)
     cout << "Try again." << endl;
     return "Fail";
   }
-
+  // TODO: Add the code to receive the response from peer server
+  // response will contain a string containing ip, port and identifier
   close(node_sockfd);
   return "True";
 }
@@ -504,6 +509,8 @@ int nodeClient::getFileID(string fileName)
 node_details* nodeClient::join(node_details frnd)
 {
   node_details* ret = new node_details;
+  predecessor = NULL;
+  sendMessage("frnd.find_successor(my_node_id)");//RPC function call to frnd. frnd will call its find_successor method and return result
   return ret;
 }
 
@@ -513,6 +520,52 @@ node_details* nodeClient::find_successor(int id)
   node_details* n_dash = find_predecessor(id);
   sendMessage("Instruction format to get successor");//Parse response, populate n_dash_successor 
   return n_dash_successor; //TBD- Approaches- find n_dash successor in previous call or seperate call 
+}
+
+node_details* nodeClient::notify(node_details new_node)
+{
+  if(predecessor == NULL || 
+    (new_node.node_id > predecessor -> node_id || new_node.node_id < my_node_id))
+    *predecessor = new_node;
+}
+
+void nodeClient::fix_fingers()
+{
+  node_details temp;
+  int random = rand() % (LEN*4);
+  int index = pow(2,random) + my_node_id;
+  map<int,ft_struct>::iterator iter = my_fingertable.find(index);
+  temp = find_successor(index);
+  (iter -> second).s_d = temp;
+  (iter -> second).successor = temp.node_id;
+}
+
+//this wrapper function takes a command string (eg. "find_successor`id")
+node_details getNode(string command){
+  node_details n_dash_successor;
+  str response = sendMessage(command);//Parse response, populate n_dash_successor 
+  //resonse will be in format of ip`port`key
+  //so after tokenizing, vector tokens will be of size 3
+  //tokens[0] = ip of the successor
+  //tokens[1] = port of the successor
+  //tokens[2] = node_id of the successor
+  vector<string> tokens;
+  tokenize(respone, tokens, "`");
+  n_dash_successor.ip = tokens[0];
+  n_dash_successor.port = stoi(tokens[1], nullptr, 10);
+  n_dash_successor.node_id = stoi(tokens[2], nullptr, 10);
+  return n_dash_successor;
+}
+
+node_details* nodeClient::find_successor(int id)
+{
+  node_details* n_dash_successor;
+  node_details* n_dash = find_predecessor(id);
+  
+  string command = "find_successor" + '`' + to_string(n_dash.node_id);
+  
+  //parse response and populate n_dash_successor
+  return getNode(command); //TBD- Approaches- find n_dash successor in previous call or seperate call 
 }
 
 node_details* nodeClient::find_predecessor(int id)
@@ -526,15 +579,15 @@ node_details* nodeClient::find_predecessor(int id)
   node_details temp_successor = successor;
 
 
-  while (id <= temp.node_id || id > temp_successor->node_id)
+  while (id <= temp.node_id || id > temp_successor.node_id)
   {
     if(flag == false){
       temp = closest_preceding_finger(id); //Searching in its own finger table
       flag = true;
     }else{
-      temp = closest_preceding_finger(id);// TO-DO make it RPC Call to temp finger's table
+      temp = sendMessage("closest_preceding_finger(id)");// TO-DO make it RPC Call to temp finger's table
     }
-    temp_successor = sendMessage("Instruction format to get successor");//Parse response, populate temp_successor 
+    temp_successor = sendMessage("get temp.successor");//Parse response, populate temp_successor 
 
   }
   return temp;
