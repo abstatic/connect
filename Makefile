@@ -3,7 +3,7 @@
 
 CC = g++
 # CC_OPTIONS = -ggdb3 -Wall -std=c++11 -lpthread
-CC_OPTIONS = -ggdb3 -w -std=c++11 -lpthread -lcrypto
+CC_OPTIONS = -ggdb3 -w -std=c++11 -pthread -lcrypto
 CFLAGS = $(CC_OPTIONS)
 
 ODIR = obj
