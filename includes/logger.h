@@ -34,21 +34,21 @@ protected:
   std::ofstream log_fp;
 };
 
-typedef struct node_details
+struct node_details
 {
   int port;
   string ip;
   int node_id;
-}node_details;
+};
 
-typedef struct file_details
+struct file_details
 {
   int port;
   string ip;
   string path;
-}file_details;
+};
 
-typedef struct ft_struct
+struct ft_struct
 {
   pair<int, int> interval;
   int successor;

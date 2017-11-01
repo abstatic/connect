@@ -63,10 +63,10 @@ nodeClient::nodeClient(string c_ip, int c_port, string f_ip="", int f_port=0)
   }
   else
   {
-    node_details my_friend;
-    my_friend.port = f_port;
-    my_friend.ip = f_ip;
-    my_friend.node_id = getNodeID(f_ip, f_port);
+    node_details* my_friend = new node_details;
+    my_friend->port = f_port;
+    my_friend->ip = f_ip;
+    my_friend->node_id = getNodeID(f_ip, f_port);
 
     predecessor = NULL;
     successor = join(my_friend);
@@ -273,15 +273,14 @@ void nodeClient::stabilize(void)
 {
   string command = "find_p_of_s";//find_predecessor_of_successor
 
-  node_details temp =  respToNode( sendMessage(command, *successor) );
+  node_details* temp =  respToNode(sendMessage(command, successor));
 
-  if(temp.node_id > my_node_id && temp.node_id < successor->node_id){
-    *successor = temp;
-  }
+  if(temp->node_id > my_node_id && temp->node_id < successor->node_id)
+    successor = temp;
 
+  command = "notify" + '`' + my_ip + '`' + to_string(my_port) + '`' + to_string(my_node_id);
 
-  command = "notify" + '`' + ip + '`' + to_string(port) + '`' + to_string(node_id);
-  string response = sendMessage(command, *successor);  
+  string response = sendMessage(command, successor);
 
   if(response == "DONE")
     cout << "Stabilize successful. " << endl;
@@ -381,6 +380,43 @@ void nodeClient::handleRequest(int connfd)
   int cmd = interpret_command(tokens[0]);
 
   // TODO handle the node requests here
+   if (cmd == GET)
+  {
+    string file_path = tokens[1];
+
+    string full_file_path = base_loc + "/" + file_path;
+
+    // open the file to be sent in read mode
+    FILE* fp = fopen(full_file_path.c_str(), "r");
+    if (fp)
+    {
+      char fileBuff[1024];
+
+      while(1)
+      {
+        int red = fread(fileBuff, 1, sizeof(fileBuff), fp);
+
+        // check for EOF
+        if (red <= 0)
+          break;
+
+        int sent = send(connfd, fileBuff, red, 0);
+        if (sent != red)
+        {
+           perror("send");
+           break;
+        }
+      }
+
+      // done close the fp
+      fclose(fp);
+      close(connfd);
+    }
+   else
+   {
+     printf("Error, couldn't open file [%s] to send!\n", full_file_path.c_str());
+   }
+  }
 }
 
 /**
@@ -543,16 +579,15 @@ int nodeClient::getFileID(string fileName)
   return n_id;
 }
 
-node_details* nodeClient::join(node_details frnd)
+node_details* nodeClient::join(node_details* frnd)
 {
-  node_details* ret = new node_details;
   predecessor = NULL;
-
+  node_details* ret = new node_details;
 
   //RPC function call to frnd. frnd will call its find_successor method and return result
   //sendMessage("frnd.find_successor(my_node_id)");
 
-  *ret = getSuccessorNode(my_node_id, frnd);
+  ret = getSuccessorNode(my_node_id, frnd);
 
   return ret;
 }
@@ -566,52 +601,61 @@ void nodeClient::notify(node_details new_node)
 
 void nodeClient::fix_fingers()
 {
-  node_details temp;
-  int random = rand() % (LEN*4);
-  int index = pow(2,random) + my_node_id;
-  ma1p<int,ft_struct>::iterator iter = my_fingertable.find(index);
-  temp = find_successor(index);
-  (iter -> second).s_d = temp;
-  (iter -> second).successor = temp.node_id;
+  // node_details temp;
+  // int random = rand() % (LEN*4);
+  // int index = pow(2,random) + my_node_id;
+  // map<int,ft_struct>::iterator iter = my_fingertable.find(index);
+  // temp = find_successor(index);
+  // (iter -> second).s_d = temp;
+  // (iter -> second).successor = temp.node_id;
 }
 
 //convert the response string containing node info to node_details struct
-node_details* respToNode(string response){
+node_details* nodeClient::respToNode(string response)
+{
   //resonse will be in format of ip`port`node_id
   //so after tokenizing, vector tokens will be of size 3
   //tokens[0] = ip of the successor
   //tokens[1] = port of the successor
   //tokens[2] = node_id of the successor
+
   node_details* node = new node_details;
   vector<string> tokens;
-  tokenize(respone, tokens, "`");
+  tokenize(response, tokens, "`");
+
   node->ip = tokens[0];
   node->port = stoi(tokens[1], nullptr, 10);
   node->node_id = stoi(tokens[2], nullptr, 10);
+
   return node;
 }
 
 //this wrapper function takes a command string (eg. "find_successor`id")
 //node_id: id whose successor we want to find
 //connectToNode: we want to connect to this node to find the successor of "node_id"
-node_details* getSuccessorNode(int node_id, node_details connectToNode){
+node_details* nodeClient::getSuccessorNode(int node_id, node_details* connectToNode)
+{
   string command = "find_successor" + '`' + to_string(node_id);
-  str response = sendMessage(command, connectToNode);//Parse response, populate n_dash_successor 
+
+  string response = sendMessage(command, connectToNode);//Parse response, populate n_dash_successor 
+
   node_details *successorOfId = respToNode(response);
+
   return successorOfId;
 }
 
 node_details* nodeClient::find_successor(int id)
 {
   node_details n_dash_successor;
-  node_details n_dash = find_predecessor(id);
-    
+  node_details* n_dash = find_predecessor(id);
   //parse response and populate n_dash_successor
-  return getSuccessorNode(n_dash.node_id, n_dash); //TBD- Approaches- find n_dash successor in previous call or seperate call 
+  // return getSuccessorNode(n_dash.node_id, n_dash); //TBD- Approaches- find n_dash successor in previous call or seperate call 
+  return n_dash;
 }
 
 node_details* nodeClient::find_predecessor(int id)
 {
+  /*
   bool flag = false;
   if (my_node_id ==  successor->node_id)
     return self;
@@ -643,7 +687,7 @@ node_details* nodeClient::find_predecessor(int id)
     succOfPredNode = getSuccessorNode(predNode.node_id, predNode);
   }
   return predNode;
-
+  */
 }
 
 node_details* nodeClient::closest_preceding_finger(int id)

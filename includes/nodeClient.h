@@ -8,7 +8,7 @@ using namespace std;
 
 /*! \class nodeClient
  *  \brief Brief class description
- *
+ 
  *  Detailed description
  */
 class nodeClient
@@ -34,7 +34,9 @@ public:
   node_details* find_predecessor(int);
   node_details* closest_preceding_finger(int);
   node_details* lookup_ft(string);
-  node_details* join(node_details);
+  node_details* join(node_details*);
+  node_details* getSuccessorNode(int, node_details*);
+  node_details* respToNode(string);
   void notify(node_details);
   void fix_fingers();
   void init_finger_table(node_details);
