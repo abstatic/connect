@@ -3,7 +3,7 @@
 
 CC = g++
 # CC_OPTIONS = -ggdb3 -Wall -std=c++11 -lpthread
-CC_OPTIONS = -ggdb3 -w -std=c++11 -pthread -lcrypto
+CC_OPTIONS = -ggdb3 -w -std=c++11 -pthread -lcrypto -lssl
 CFLAGS = $(CC_OPTIONS)
 
 ODIR = obj
@@ -26,10 +26,10 @@ config:
 
 # this target compiles and links the client
 client: clean
-	$(CC) $(CC_OPTIONS) -c $(SDIR)/$(CLIENT)/connect.cpp -o $(ODIR)/connect.o
-	$(CC) $(CC_OPTIONS) -c $(SDIR)/$(CLIENT)/nodeClient.cpp -o $(ODIR)/nodeClient.o
-	$(CC) $(CC_OPTIONS) -c $(SDIR)/logger.cpp -o $(ODIR)/logger.o
-	$(CC) $(CC_OPTIONS) $(ODIR)/*.o  -o $(BUILD)/$@
+	$(CC) -c $(SDIR)/logger.cpp $(CC_OPTIONS) -o $(ODIR)/logger.o
+	$(CC) -c $(SDIR)/$(CLIENT)/connect.cpp $(CC_OPTIONS) -o $(ODIR)/connect.o
+	$(CC) -c $(SDIR)/$(CLIENT)/nodeClient.cpp $(CC_OPTIONS) -o $(ODIR)/nodeClient.o
+	$(CC) $(ODIR)/*.o  $(CC_OPTIONS) -o $(BUILD)/$@
 	cp $(BUILD)/* $(BIN)/
 
 cleano:

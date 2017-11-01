@@ -24,16 +24,16 @@ public:
   void searchFile(string); // search a file on trackr;
   void deregisterFile(string); // remove a file from trackr;
   void start(void); // start the listen server
-  string sendMessage(string, node_details); // send a simple message to server
+  string sendMessage(string, node_details*); // send a simple message to server
   void stabilize(void); // runs as a thread;
   void startListen(void); // start listening foir requests on a port
   void handleRequest(int); // this method handles a client request on client
 
   // chord methods
-  node_details find_successor(int);
-  node_details find_predecessor(int);
-  node_details closest_preceding_finger(int);
-  node_details lookup_ft(string);
+  node_details* find_successor(int);
+  node_details* find_predecessor(int);
+  node_details* closest_preceding_finger(int);
+  node_details* lookup_ft(string);
   node_details* join(node_details);
   void notify(node_details);
   void fix_fingers();
@@ -54,11 +54,11 @@ public:
 
   // stores int value of the hash M bits, value will be struct
   map<int, vector<file_details> > my_filetable;
-  map<int, ft_struct> my_fingertable;
+  map<int, ft_struct*> my_fingertable;
 
   node_details* successor;
   node_details* predecessor;
-  node_details self;
+  node_details* self;
 
   Logger* blackbox; // logger for this class
 

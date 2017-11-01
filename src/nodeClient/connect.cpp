@@ -49,8 +49,8 @@ int main(int argc, const char *argv[])
   t.detach();
 
   // start stablization thread
-  thread s_thread(&nodeClient::stabilize, connect_node);
-  s_thread.detach();
+  // thread s_thread(&nodeClient::stabilize, connect_node);
+  // s_thread.detach();
 
   string line;
   while (getline(cin, line))
@@ -179,6 +179,16 @@ int main(int argc, const char *argv[])
         {
           cout << "SHOW" << endl;
           // TODO SHOT FT AND FILE MAP
+          auto ft = connect_node.my_fingertable;
+          for (auto i = ft.begin(); i != ft.end(); i++)
+          {
+            ft_struct* curr = i -> second;
+            cout << "START: " << i -> first << " ";
+            cout << "INTERVAL: " << curr->interval.first << "-" << curr->interval.second << " ";
+            if (curr -> s_d != NULL)
+              cout << "ID: " << curr -> s_d -> node_id << " " << curr -> s_d -> port;
+            cout << endl;
+          }
         }
         break;
       case STABLIZE:

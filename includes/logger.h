@@ -52,8 +52,8 @@ typedef struct ft_struct
 {
   pair<int, int> interval;
   int successor;
-  node_details s_d;
-}ft_struct;
+  node_details* s_d;
+};
 
 void tokenize(string str, vector<string>& tokens, const string& delimiters = " ");
 void sanitize(string&, char); // remove a char from string
