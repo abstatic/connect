@@ -30,10 +30,10 @@ public:
   void handleRequest(int); // this method handles a client request on client
 
   // chord methods
-  node_details find_successor(int);
-  node_details find_predecessor(int);
-  node_details closest_preceding_finger(int);
-  node_details lookup_ft(string);
+  node_details* find_successor(int);
+  node_details* find_predecessor(int);
+  node_details* closest_preceding_finger(int);
+  node_details* lookup_ft(string);
   node_details* join(node_details);
 
   int getNodeID(string, int);
@@ -50,11 +50,11 @@ public:
 
   // stores int value of the hash M bits, value will be struct
   map<int, vector<file_details> > my_filetable;
-  map<int, ft_struct> my_fingertable;
+  map<int, ft_struct*> my_fingertable;
 
   node_details* successor;
   node_details* predecessor;
-  node_details self;
+  node_details* self;
 
   Logger* blackbox; // logger for this class
 

@@ -27,19 +27,36 @@ nodeClient::nodeClient(string c_ip, int c_port, string f_ip="", int f_port=0)
   haveSearchResults = false;
   my_node_id = getNodeID(my_ip, my_port);
 
-  self.ip = my_ip;
-  self.port = my_port;
-  self.node_id = my_node_id;
+  self = new node_details;
+  self->ip = my_ip;
+  self->port = my_port;
+  self->node_id = my_node_id;
 
   // TODO: add code if directory doesn't exist
 
   // TODO: Initialize successor, predecessor, fingertable, stablize here.
+
+  int mod_val = pow(2, LEN*4);
+  for (int i = 0; i < LEN*4; i++)
+  {
+    int key = my_node_id + (int) pow(2, i);// 2^i + my_node_id;
+
+    ft_struct* n = new ft_struct;
+    int sec_pair = (my_node_id + (int)pow(2, i+1) - 1) % mod_val;
+    n -> interval = make_pair(key, sec_pair);
+    n -> s_d = NULL;
+
+    my_fingertable[key] = n;
+  }
+
   if (f_ip == "")
   {
     successor = new node_details;
     successor->port = my_port;
     successor->ip = my_ip;
     successor->node_id = my_node_id;
+
+    predecessor = new node_details;
     predecessor->port = my_port;
     predecessor->ip = my_ip;
     predecessor->node_id = my_node_id;
@@ -53,6 +70,13 @@ nodeClient::nodeClient(string c_ip, int c_port, string f_ip="", int f_port=0)
 
     predecessor = NULL;
     successor = join(my_friend);
+
+    auto it = my_fingertable.begin();
+
+    ft_struct* n_ft = it -> second;
+
+    n_ft -> successor = successor -> node_id;
+    n_ft -> s_d = successor;
   }
 
   // if TODO base loc doesn't exits then create
@@ -104,9 +128,9 @@ void nodeClient::downloadFile(string filepath)
   // FINGERTABLE LOOKUP TO GET THE RIGHT NODE ID
   // then get the node ip and node port
 
-  node_details nd = lookup_ft(filepath);
-  int down_port = nd.port;
-  string node_ip = nd.ip;
+  node_details* nd = lookup_ft(filepath);
+  int down_port = nd->port;
+  string node_ip = nd->ip;
 
   int downSock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -358,10 +382,10 @@ string nodeClient::sendMessage(string message)
 {
   // ADD LOGIC FOR FINGER TABLE LOOKUP. BASED ON MESSAGE.
   // We find out which node will receive the message
-  node_details nd = lookup_ft(message);
+  node_details* nd = lookup_ft(message);
 
-  int node_port = nd.port;
-  string node_ip = nd.ip;
+  int node_port = nd->port;
+  string node_ip = nd->ip;
 
   int node_sockfd = 0;
 
@@ -436,13 +460,13 @@ string nodeClient::sendMessage(string message)
   return "True";
 }
 
-node_details nodeClient::lookup_ft(string command)
+node_details* nodeClient::lookup_ft(string command)
 {
   // TODO do a Fingertable lookup and find out the correct ip address
-  node_details nd;
-  nd.ip = "RANDOM IP ADDRESS";
-  nd.port = 123;
-  nd.node_id = 123;
+  node_details* nd = new node_details;
+  nd->ip = "RANDOM IP ADDRESS";
+  nd->port = 123;
+  nd->node_id = 123;
   return nd;
 }
 
@@ -452,7 +476,6 @@ int nodeClient::getNodeID(string ip, int port)
   unsigned char hash[SHA_DIGEST_LENGTH];
 
   const unsigned char* s = reinterpret_cast<const unsigned char *>(op.c_str());
-  cout << strlen(op.c_str()) << endl;
   SHA1(s,  strlen(op.c_str()), hash);
 
   string hex = GetHexRepresentation(hash, SHA_DIGEST_LENGTH);
@@ -484,15 +507,15 @@ node_details* nodeClient::join(node_details frnd)
   return ret;
 }
 
-node_details nodeClient::find_successor(int id)
+node_details* nodeClient::find_successor(int id)
 {
-  node_details n_dash_successor;
-  node_details n_dash = find_predecessor(id);
+  node_details* n_dash_successor;
+  node_details* n_dash = find_predecessor(id);
   sendMessage("Instruction format to get successor");//Parse response, populate n_dash_successor 
   return n_dash_successor; //TBD- Approaches- find n_dash successor in previous call or seperate call 
 }
 
-node_details nodeClient::find_predecessor(int id)
+node_details* nodeClient::find_predecessor(int id)
 {
   bool flag = false;
   if (my_node_id ==  successor->node_id)
@@ -518,15 +541,15 @@ node_details nodeClient::find_predecessor(int id)
 */
 }
 
-node_details nodeClient::closest_preceding_finger(int id)
+node_details* nodeClient::closest_preceding_finger(int id)
 {
   int limit = LEN * 4;
   for (auto i = my_fingertable.rbegin(); i != my_fingertable.rend(); i++)
   {
-    int s_val = (i->second).successor;
+    int s_val = (i->second) -> successor;
 
     if (s_val > my_node_id && s_val < id)
-      return i->second.s_d;
+      return i->second -> s_d;
   }
   return self;
 }

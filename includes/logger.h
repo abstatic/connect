@@ -52,7 +52,7 @@ struct ft_struct
 {
   pair<int, int> interval;
   int successor;
-  node_details s_d;
+  node_details* s_d;
 };
 
 void tokenize(string str, vector<string>& tokens, const string& delimiters = " ");
