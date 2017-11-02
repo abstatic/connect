@@ -417,10 +417,22 @@ void nodeClient::handleRequest(int connfd)
   }
   else if (cmd == FIND_SUCCESSOR)
   {
-    // TODO HANDLE FIND SUCCESSOR
+
     cout << "FIND SUCCESSOR" << endl;
-    string st = "MESSAGE RECEIVED";
-    send(connfd, st.c_str(), st.length(), 0);
+    string response;
+    string port_str = to_string(successor->port);
+    string node_id_str = to_string(successor->node_id);
+
+    
+    response += successor->ip + "`" + port_str + "`" + node_id_str;
+
+    cout << "handleRequest: ";
+    cout << "response string is: " << response << endl;
+
+    // TODO HANDLE FIND SUCCESSOR
+    // cout << "FIND SUCCESSOR" << endl;
+    // string st = "MESSAGE RECEIVED";
+    send(connfd, response.c_str(), response.length(), 0);
     close(connfd);
   }
 }
@@ -648,7 +660,7 @@ node_details* nodeClient::getSuccessorNode(int node_id, node_details* connectToN
   cout << "The command is : " << command << endl;
   string response = sendMessage(command, connectToNode);//Parse response, populate n_dash_successor 
 
-  cout << response;
+  cout << "response for getSuccessorNode: " << response << "\n";
 
   node_details *successorOfId = respToNode(response);
 
