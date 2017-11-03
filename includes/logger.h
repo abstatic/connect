@@ -16,6 +16,8 @@
 #define SHOW 6
 #define STABLIZE 7
 #define FIND_SUCCESSOR 8
+#define GET_SUCCESSOR 9
+#define CPF 10
 
 #define LEN 4
 

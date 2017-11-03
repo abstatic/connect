@@ -79,6 +79,8 @@ nodeClient::nodeClient(string c_ip, int c_port, string f_ip="", int f_port=0)
     n_ft -> s_d = successor;
   }
 
+  cout << my_node_id << endl;
+
   // if TODO base loc doesn't exits then create
   blackbox = new Logger(base_loc + "/node_log");
 }
@@ -420,11 +422,11 @@ void nodeClient::handleRequest(int connfd)
 
     cout << "FIND SUCCESSOR" << endl;
     string response;
-    string port_str = to_string(successor->port);
-    string node_id_str = to_string(successor->node_id);
 
-    
-    response += successor->ip + "`" + port_str + "`" + node_id_str;
+    int id = stoi(tokens[1]);
+    node_details* succ = find_successor(id);
+
+    response += succ->ip + to_string(succ->port) + to_string(succ->node_id);
 
     cout << "handleRequest: ";
     cout << "response string is: " << response << endl;
@@ -434,6 +436,14 @@ void nodeClient::handleRequest(int connfd)
     // string st = "MESSAGE RECEIVED";
     send(connfd, response.c_str(), response.length(), 0);
     close(connfd);
+  }
+  else if (cmd == GET_SUCCESSOR)
+  {
+    string response;
+
+    string ret_ip = successor -> ip;
+    string ret_port = to_string(successor -> port);
+    string ret_id = to_string(successor -> node_id);
   }
 }
 
@@ -669,53 +679,48 @@ node_details* nodeClient::getSuccessorNode(int node_id, node_details* connectToN
 
 node_details* nodeClient::find_successor(int id)
 {
-  node_details n_dash_successor;
   node_details* n_dash = find_predecessor(id);
   //parse response and populate n_dash_successor
   // return getSuccessorNode(n_dash.node_id, n_dash); //TBD- Approaches- find n_dash successor in previous call or seperate call 
-  return n_dash;
+  string command_string = "get_successor`";
+  node_details* n_dash_successor = respToNode(sendMessage(command_string, n_dash));
+
+  return n_dash_successor;
 }
 
 node_details* nodeClient::find_predecessor(int id)
 {
-  /*
   bool flag = false;
-  if (my_node_id ==  successor->node_id)
+
+  // if only node in the network
+  if (my_node_id == successor->node_id)
     return self;
 
-  
-  node_details predNode = self;
-  node_details succOfPredNode = successor;
+  node_details* predNode = self;
+  node_details* succOfPredNode = successor;
 
-
-  while (id <= predNode.node_id || id > succOfPredNode.node_id)
-  {    
-    if(flag == false){
+  while (id <= predNode->node_id || id > succOfPredNode->node_id)
+  {
+    if(flag == false)
+    {
       predNode = closest_preceding_finger(id); //Searching in its own finger table
       flag = true;
     }
-    else{
-
+    else
+    {
       // predNode = sendMessage("closest_preceding_finger(id)");// TO-DO make it RPC Call to temp finger's table
-      string command = "find_cpf" + '`' + to_string(id);    
-      predNode = sendMessage(command, succOfPredNode);// TO-DO make it RPC Call to temp finger's table
-
-
+      string command = "find_cpf`" + to_string(id);
+      predNode = respToNode(sendMessage(command, succOfPredNode));
     }
-    //sendMessage("get temp.successor");//Parse response, populate temp_successor 
+
     //find the successor of predNode (in case predNode has changed in while loop)
-    
-    //TODO: to optimize, if predNode hasn't changed from last loop iteration, then successor is not
-    //needed to be calculated again, so we won't need the following call.
-    succOfPredNode = getSuccessorNode(predNode.node_id, predNode);
+    succOfPredNode = getSuccessorNode(predNode->node_id, predNode);
   }
   return predNode;
-  */
 }
 
 node_details* nodeClient::closest_preceding_finger(int id)
 {
-  int limit = LEN * 4;
   for (auto i = my_fingertable.rbegin(); i != my_fingertable.rend(); i++)
   {
     int s_val = (i->second) -> successor;
