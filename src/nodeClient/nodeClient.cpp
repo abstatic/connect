@@ -426,7 +426,7 @@ void nodeClient::handleRequest(int connfd)
     int id = stoi(tokens[1]);
     node_details* succ = find_successor(id);
 
-    response += succ->ip + to_string(succ->port) + to_string(succ->node_id);
+    response += succ->ip + "`" + to_string(succ->port) + "`" + to_string(succ->node_id);
 
     cout << "handleRequest: ";
     cout << "response string is: " << response << endl;
@@ -444,6 +444,8 @@ void nodeClient::handleRequest(int connfd)
     string ret_ip = successor -> ip;
     string ret_port = to_string(successor -> port);
     string ret_id = to_string(successor -> node_id);
+
+    response += ret_ip + "`" + ret_port + "`" + ret_id;
   }
 }
 
