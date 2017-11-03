@@ -435,6 +435,59 @@ void nodeClient::handleRequest(int connfd)
     send(connfd, response.c_str(), response.length(), 0);
     close(connfd);
   }
+  else if(cmd == FIND_CPF){
+    int id = stoi(tokens[1]);
+    
+    node_details* cpf = closest_preceding_finger(id);
+
+
+    cout << "FIND  CLOSEST_PRECEDING_FINGER" << endl;
+    string response;
+    string port_str = to_string(cpf->port);
+    string node_id_str = to_string(cpf->node_id);
+
+    
+    response += cpf->ip + "`" + port_str + "`" + node_id_str;
+
+    cout << "handleRequest: ";
+    cout << "response string is: " << response << endl;
+
+    send(connfd, response.c_str(), response.length(), 0);
+    close(connfd);
+
+
+  }
+  else if(cmd == FIND_PFS)
+  {
+  
+    cout << "FIND PREDECESSOR" << endl;
+    string response;
+    string port_str = to_string(predecessor->port);
+    string node_id_str = to_string(predecessor->node_id);
+
+    
+    response += predecessor->ip + "`" + port_str + "`" + node_id_str;
+
+    cout << "handleRequest: ";
+    cout << "response string is: " << response << endl;
+
+    send(connfd, response.c_str(), response.length(), 0);
+    close(connfd);
+
+
+  }
+  else if(cmd == NOTIFY)
+  {
+    node_detail node_to_notify ;
+
+    node_to_notify.ip = tokens[1];
+    node_to_notify.port = stoi(tokens[2]);
+    node_to_notify.node_id = stoi(tokens[3]);
+
+    notify(node_to_notify);
+
+  }
+
 }
 
 /**

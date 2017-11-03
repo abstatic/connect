@@ -16,6 +16,9 @@
 #define SHOW 6
 #define STABLIZE 7
 #define FIND_SUCCESSOR 8
+#define FIND_CPF 9
+#define FIND_PFS 10
+#define NOTIFY 11
 
 #define LEN 4
 
