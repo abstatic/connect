@@ -112,7 +112,11 @@ int interpret_command(string cmd_str)
   else if (cmd_str == "get_successor")
     return GET_SUCCESSOR;
   else if (cmd_str == "find_cpf")
-    return CPF;
+    return FIND_CPF;
+  else if (cmd_str == "find_p_of_s")
+    return FIND_PFS;
+  else if (cmd_str == "notify")
+    return NOTIFY;
   else if (cmd_str.find("pull[") == 0)
     return GET;
   else
