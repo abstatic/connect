@@ -117,6 +117,8 @@ int interpret_command(string cmd_str)
     return FIND_PFS;
   else if (cmd_str == "notify")
     return NOTIFY;
+  else if (cmd_str == "get_file_table")
+    return GET_FILE_TABLE;
   else if (cmd_str.find("pull[") == 0)
     return GET;
   else

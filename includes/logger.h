@@ -20,6 +20,7 @@
 #define FIND_CPF 10
 #define FIND_PFS 11
 #define NOTIFY 12
+#define GET_FILE_TABLE 13
 
 #define LEN 4
 
@@ -41,15 +42,15 @@ protected:
 
 struct node_details
 {
-  int port;
   string ip;
+  int port;  
   int node_id;
 };
 
 struct file_details
 {
-  int port;
   string ip;
+  int port;
   string path;
 };
 

@@ -29,7 +29,10 @@ public:
   void startListen(void); // start listening foir requests on a port
   void handleRequest(int); // this method handles a client request on client
 
+
   // chord methods
+  void getFileTableInfoFromSuccessor(); //new node transfers the file info from successor
+  void makeFileTableFrmResponse(string&); //populates my_filetable from string response
   node_details* find_successor(int);
   node_details* find_predecessor(int);
   node_details* closest_preceding_finger(int);
