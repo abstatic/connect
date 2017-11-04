@@ -273,19 +273,28 @@ void nodeClient::searchFile(string file_name)
  */
 void nodeClient::stabilize(void)
 {
-  string command = "find_p_of_s";//find_predecessor_of_successor
+  while (1)
+  {
+    sleep(5);
+    cout << "Stablize Called" << endl;
+    if (successor->node_id == self->node_id)
+      continue;
 
-  node_details* temp =  respToNode(sendMessage(command, successor));
+    string command = "find_p_of_s";//find_predecessor_of_successor
 
-  if(temp->node_id > my_node_id && temp->node_id < successor->node_id)
-    successor = temp;
+    node_details* temp =  respToNode(sendMessage(command, successor));
 
-  command = "notify" + '`' + my_ip + '`' + to_string(my_port) + '`' + to_string(my_node_id);
+    if(temp->node_id > my_node_id && temp->node_id < successor->node_id)
+      successor = temp;
 
-  string response = sendMessage(command, successor);
+    string cmd_str = "notify`";
+    command = cmd_str + my_ip + "`"  + to_string(my_port) + "`"  + to_string(my_node_id);
 
-  if(response == "DONE")
-    cout << "Stabilize successful. " << endl;
+    string response = sendMessage(command, successor);
+
+    if(response == "DONE")
+      cout << "Stabilize successful. " << endl;
+  }
 }
 
 /***
@@ -446,6 +455,9 @@ void nodeClient::handleRequest(int connfd)
     string ret_id = to_string(successor -> node_id);
 
     response += ret_ip + "`" + ret_port + "`" + ret_id;
+
+    send(connfd, response.c_str(), response.length(), 0);
+    close(connfd);
   }
   else if(cmd == FIND_CPF)
   {
@@ -491,7 +503,6 @@ void nodeClient::handleRequest(int connfd)
     node_to_notify.node_id = stoi(tokens[3]);
 
     notify(node_to_notify);
-
   }
 }
 
@@ -580,6 +591,7 @@ string nodeClient::sendMessage(string message, node_details* nd)
     return "Fail";
   }
 
+  cout << "Waiting for reply" << endl;
   // TODO: Add the code to receive the response from peer server
   // response will contain a string containing ip, port and identifier
   int i = 0;
@@ -592,7 +604,7 @@ string nodeClient::sendMessage(string message, node_details* nd)
     i++;
   } while (bytes_read != 0);
 
-  string s(recvBuff);
+  string s(recvBuff,0, i-1); // #Hackey DANGEROUS
 
   cout << "recv: " << s << endl;
 
@@ -676,15 +688,23 @@ void nodeClient::notify(node_details new_node)
     *predecessor = new_node;
 }
 
-void nodeClient::fix_fingers()
+void nodeClient::fix_fingers(void)
 {
-  // node_details temp;
-  // int random = rand() % (LEN*4);
-  // int index = pow(2,random) + my_node_id;
-  // map<int,ft_struct>::iterator iter = my_fingertable.find(index);
-  // temp = find_successor(index);
-  // (iter -> second).s_d = temp;
-  // (iter -> second).successor = temp.node_id;
+  while (1)
+  {
+    sleep(8);
+    cout << "FIX FINGERS" << endl;
+    node_details* temp;
+    int random = rand() % (LEN*4);
+    int index = pow(2,random) + my_node_id;
+
+    auto iter = my_fingertable.find(index);
+
+    temp = find_successor(index);
+
+    (iter -> second)->s_d = temp;
+    (iter -> second)->successor = temp->node_id;
+  }
 }
 
 //convert the response string containing node info to node_details struct
@@ -730,6 +750,7 @@ node_details* nodeClient::find_successor(int id)
   node_details* n_dash = find_predecessor(id);
   //parse response and populate n_dash_successor
   // return getSuccessorNode(n_dash.node_id, n_dash); //TBD- Approaches- find n_dash successor in previous call or seperate call 
+  cout << "find_predecessor("<<id<<")"<<endl;
   string command_string = "get_successor`";
   node_details* n_dash_successor = respToNode(sendMessage(command_string, n_dash));
 

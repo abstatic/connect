@@ -49,8 +49,11 @@ int main(int argc, const char *argv[])
   t.detach();
 
   // start stablization thread
-  // thread s_thread(&nodeClient::stabilize, connect_node);
-  // s_thread.detach();
+  thread s_thread(&nodeClient::stabilize, connect_node);
+  s_thread.detach();
+
+  thread f_thread(&nodeClient::fix_fingers, connect_node);
+  f_thread.detach();
 
   string line;
   while (getline(cin, line))
