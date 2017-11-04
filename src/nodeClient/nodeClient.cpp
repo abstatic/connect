@@ -71,6 +71,10 @@ nodeClient::nodeClient(string c_ip, int c_port, string f_ip="", int f_port=0)
     predecessor = NULL;
     successor = join(my_friend);
 
+    //get files from its successor for which now this node will be responsible
+    getFileTableInfoFromSuccessor();
+
+
     auto it = my_fingertable.begin();
 
     ft_struct* n_ft = it -> second;
@@ -83,6 +87,55 @@ nodeClient::nodeClient(string c_ip, int c_port, string f_ip="", int f_port=0)
 
   // if TODO base loc doesn't exits then create
   blackbox = new Logger(base_loc + "/node_log");
+}
+
+
+void nodeClient::makeFileTableFrmResponse(string& response){
+  vector<string> rows;
+  tokenize(response, rows, "#");
+
+  for(auto& x:rows){
+
+    vector<string> fields;
+    tokenize(x, fields, "`");
+    //fields[0] is the id of file.
+
+    /* fileLocations contains list of all nodes where file is stored.
+     * Each row contains:
+     * (1 for id of file, which is key of map entry)+(number of file_details structs)
+     * number of fields, so allocating vector size accordingly.
+     */
+    vector<file_details> fileLocations(fields.size()-1);
+
+
+    /*
+     * each field from index 1 onwards contains file_details struct info
+     * separated by colons. Tokenizing "fields" and populating "fileLocations" accordingly.
+     */
+
+    for(int i=1; i<fields.size(); i++){
+      vector<string> structContent;
+      tokenize(fields[i], structContent, ":");
+      fileLocations[i-1].ip = structContent[0];
+      fileLocations[i-1].port = stoi(structContent[1]);
+      fileLocations[i-1].path = structContent[2];
+    }
+
+    /*
+     * populate the map of filetable for this node.
+     */
+
+    int id = stoi(fields[0]);
+    my_filetable[id] = fileLocations;
+  }
+}
+
+void nodeClient::getFileTableInfoFromSuccessor(){
+  string command = "get_file_table`";
+  command += to_string(my_node_id);
+
+  string response = sendMessage(command, successor);
+  makeFileTableFrmResponse(response);
 }
 
 /**
@@ -209,7 +262,7 @@ void nodeClient::downloadFile(string filepath)
       printf("FAILURE: Error, couldn't open file [%s] to receive!\n", outfile_path.c_str());
 
     close(downSock);
-   }
+  }
   else
     perror("FAILURE: socket creation");
 }
@@ -229,7 +282,7 @@ void nodeClient::registerFile(string fileSharePath)
   // string reply = sendMessage(command);
   // TODO
   // if (reply.find("True") != -1)
-    cout << "Command sent successfully" << endl;
+  cout << "Command sent successfully" << endl;
 }
 
 /**
@@ -358,67 +411,67 @@ void nodeClient::startListen(void)
  */
 void nodeClient::handleRequest(int connfd)
 {
-  char recvBuff[1024];
-  bzero(recvBuff, sizeof(recvBuff));
+    char recvBuff[1024];
+    bzero(recvBuff, sizeof(recvBuff));
 
-  int bytes_read = recv(connfd, recvBuff, sizeof(recvBuff), 0);
+    int bytes_read = recv(connfd, recvBuff, sizeof(recvBuff), 0);
 
-  if (bytes_read == 0 || bytes_read == -1)
-  {
-    string msg = (string)__FUNCTION__ + " ERROR";
-    perror(msg.c_str());
-    string err = strerror(errno);
-    blackbox -> record(msg + err);
-    close(connfd);
-  }
-
-  string command_string(recvBuff);
-
-  vector<string> tokens;
-  tokenize(command_string, tokens, "`");
-
-  cout << command_string << endl;
-
-  int cmd = interpret_command(tokens[0]);
-
-  // TODO handle the node requests here
-  if (cmd == GET)
-  {
-    string file_path = tokens[1];
-
-    string full_file_path = base_loc + "/" + file_path;
-
-    // open the file to be sent in read mode
-    FILE* fp = fopen(full_file_path.c_str(), "r");
-    if (fp)
+    if (bytes_read == 0 || bytes_read == -1)
     {
-      char fileBuff[1024];
-
-      while(1)
-      {
-        int red = fread(fileBuff, 1, sizeof(fileBuff), fp);
-
-        // check for EOF
-        if (red <= 0)
-          break;
-
-        int sent = send(connfd, fileBuff, red, 0);
-        if (sent != red)
-        {
-           perror("send");
-           break;
-        }
-      }
-
-      // done close the fp
-      fclose(fp);
+      string msg = (string)__FUNCTION__ + " ERROR";
+      perror(msg.c_str());
+      string err = strerror(errno);
+      blackbox -> record(msg + err);
       close(connfd);
     }
-   else
-     printf("Error, couldn't open file [%s] to send!\n", full_file_path.c_str());
-  }
-  else if (cmd == FIND_SUCCESSOR)
-  {
+
+    string command_string(recvBuff);
+
+    vector<string> tokens;
+    tokenize(command_string, tokens, "`");
+
+    cout << command_string << endl;
+
+    int cmd = interpret_command(tokens[0]);
+
+    // TODO handle the node requests here
+    if (cmd == GET)
+    {
+      string file_path = tokens[1];
+
+      string full_file_path = base_loc + "/" + file_path;
+
+      // open the file to be sent in read mode
+      FILE* fp = fopen(full_file_path.c_str(), "r");
+      if (fp)
+      {
+        char fileBuff[1024];
+
+        while(1)
+        {
+          int red = fread(fileBuff, 1, sizeof(fileBuff), fp);
+
+          // check for EOF
+          if (red <= 0)
+            break;
+
+          int sent = send(connfd, fileBuff, red, 0);
+          if (sent != red)
+          {
+           perror("send");
+           break;
+         }
+       }
+
+        // done close the fp
+       fclose(fp);
+       close(connfd);
+     }
+     else
+       printf("Error, couldn't open file [%s] to send!\n", full_file_path.c_str());
+   }
+   else if (cmd == FIND_SUCCESSOR)
+   {
 
     cout << "FIND SUCCESSOR" << endl;
     string response;
@@ -431,9 +484,9 @@ void nodeClient::handleRequest(int connfd)
     cout << "handleRequest: ";
     cout << "response string is: " << response << endl;
 
-    // TODO HANDLE FIND SUCCESSOR
-    // cout << "FIND SUCCESSOR" << endl;
-    // string st = "MESSAGE RECEIVED";
+      // TODO HANDLE FIND SUCCESSOR
+      // cout << "FIND SUCCESSOR" << endl;
+      // string st = "MESSAGE RECEIVED";
     send(connfd, response.c_str(), response.length(), 0);
     close(connfd);
   }
@@ -468,7 +521,7 @@ void nodeClient::handleRequest(int connfd)
   }
   else if(cmd == FIND_PFS)
   {
-  
+
     cout << "FIND PREDECESSOR" << endl;
     string response;
     string port_str = to_string(predecessor->port);
@@ -492,6 +545,34 @@ void nodeClient::handleRequest(int connfd)
 
     notify(node_to_notify);
 
+  }
+  else if(cmd == GET_FILE_TABLE)
+  {
+    int id = stoi(tokens[1]);
+
+    //map<int, vector<file_details> > m = my_filetable;
+    map<int, vector<file_details> >::iterator ii;
+
+    string response;
+    for(  ii = my_filetable.begin(); ii->first <= id; ++ii )
+    {
+      //cout << ii->first << ": ";
+      string id_str = to_string(ii->first) + "`";
+      response += id_str;
+
+      vector<file_details>::iterator it;
+      for( it = ii->second.begin(); it != ii->second.end(); ++it) {
+        //cout << " " << it->ip <<" "<<  it->port <<" "<<it->path;
+        string temp = it->ip + ":" + to_string(it->port) + ":" + it->path + "`";
+        response += temp;
+      }
+      response += "#";
+      cout<<endl;
+    }
+
+    //After transferring the file table, should we delete these entries from current node?
+    //because now the new node will store those entries, we don't need it here
+    //maybe it helps with mirroring?
   }
 }
 
@@ -664,7 +745,7 @@ node_details* nodeClient::join(node_details* frnd)
   predecessor = NULL;
   node_details* ret = new node_details;
 
-  ret = getSuccessorNode(my_node_id, frnd);
+  ret = getSuccessorNode(my_node_id, frnd);                                                                                                         
 
   return ret;
 }
