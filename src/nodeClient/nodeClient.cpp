@@ -32,55 +32,37 @@ nodeClient::nodeClient(string c_ip, int c_port, string f_ip="", int f_port=0)
   self->port = my_port;
   self->node_id = my_node_id;
 
-  // TODO: add code if directory doesn't exist
-
-  // TODO: Initialize successor, predecessor, fingertable, stablize here.
-
-  int mod_val = pow(2, LEN*4);
-  for (int i = 0; i < LEN*4; i++)
-  {
-    int key = my_node_id + (int) pow(2, i);// 2^i + my_node_id;
-
-    ft_struct* n = new ft_struct;
-    int sec_pair = (my_node_id + (int)pow(2, i+1) - 1) % mod_val;
-    n -> interval = make_pair(key, sec_pair);
-    n -> s_d = NULL;
-
-    my_fingertable[key] = n;
-  }
+  // start listening thread
+  thread t(&nodeClient::startListen, this);
+  t.detach();
 
   if (f_ip == "")
   {
-    successor = new node_details;
-    successor->port = my_port;
-    successor->ip = my_ip;
-    successor->node_id = my_node_id;
+    cout << "Creating a new chord ring" << endl;
 
-    predecessor = new node_details;
-    predecessor->port = my_port;
-    predecessor->ip = my_ip;
-    predecessor->node_id = my_node_id;
+    // set self for predecessor and successor
+    successor = self;
+    predecessor = self;
+
+    // set self for fingers
+    for (int i = 0; i < KEY_SIZE; i++)
+      self_finger_table[i] = self;
+
+    // set data to blank
+    for (int i = 0; i < KEY_SIZE; i++)
+      self_data[i] = "";
+
+    // set the shared data to blank;
   }
   else
   {
+    // reconstruct the friend node
     node_details* my_friend = new node_details;
     my_friend->port = f_port;
     my_friend->ip = f_ip;
     my_friend->node_id = getNodeID(f_ip, f_port);
 
-    predecessor = NULL;
-    successor = join(my_friend);
-
-    //get files from its successor for which now this node will be responsible
-    getFileTableInfoFromSuccessor();
-
-
-    auto it = my_fingertable.begin();
-
-    ft_struct* n_ft = it -> second;
-
-    n_ft -> successor = successor -> node_id;
-    n_ft -> s_d = successor;
+    join(my_friend);
   }
 
   cout << my_node_id << endl;
@@ -88,7 +70,6 @@ nodeClient::nodeClient(string c_ip, int c_port, string f_ip="", int f_port=0)
   // if TODO base loc doesn't exits then create
   blackbox = new Logger(base_loc + "/node_log");
 }
-
 
 void nodeClient::makeFileTableFrmResponse(string& response){
   vector<string> rows;
@@ -326,12 +307,10 @@ void nodeClient::searchFile(string file_name)
  */
 void nodeClient::stabilize(void)
 {
-  while (1)
-  {
+  // while (1)
+  // {
     sleep(5);
     cout << "Stablize Called" << endl;
-    if (successor->node_id == self->node_id)
-      continue;
 
     string command = "find_p_of_s";//find_predecessor_of_successor
 
@@ -345,9 +324,8 @@ void nodeClient::stabilize(void)
 
     string response = sendMessage(command, successor);
 
-    if(response == "DONE")
-      cout << "Stabilize successful. " << endl;
-  }
+    cout << "Stablize: " << response << endl;
+  // }
 }
 
 /***
@@ -486,46 +464,61 @@ void nodeClient::handleRequest(int connfd)
     string response;
 
     int id = stoi(tokens[1]);
+    cout << "REQUEST FOR SUCCESSOR OF KEY: " << id << endl;
     node_details* succ = find_successor(id);
+
+    cout << "Successor: " << endl;
+    printNode(successor);
 
     response += succ->ip + "`" + to_string(succ->port) + "`" + to_string(succ->node_id);
 
     cout << "handleRequest: ";
     cout << "response string is: " << response << endl;
 
-      // TODO HANDLE FIND SUCCESSOR
-      // cout << "FIND SUCCESSOR" << endl;
-      // string st = "MESSAGE RECEIVED";
     send(connfd, response.c_str(), response.length(), 0);
     close(connfd);
   }
   else if (cmd == GET_SUCCESSOR)
   {
+    cout << "Handling get successor" << endl;
     string response;
 
     string ret_ip = successor -> ip;
     string ret_port = to_string(successor -> port);
     string ret_id = to_string(successor -> node_id);
 
-    response += ret_ip + "`" + ret_port + "`" + ret_id;
+    response = ret_ip + "`" + ret_port + "`" + ret_id;
+
+    send(connfd, response.c_str(), response.length(), 0);
+    close(connfd);
+  }
+  else if (cmd == GET_PREDECESSOR)
+  {
+    cout << "Handling get predecessor" << endl;
+
+    string response;
+    string ret_ip = predecessor -> ip;
+    string ret_port = to_string(predecessor -> port);
+    string ret_id = to_string(predecessor -> node_id);
+
+    response = ret_ip + "`" + ret_port + "`" + ret_id;
 
     send(connfd, response.c_str(), response.length(), 0);
     close(connfd);
   }
   else if(cmd == FIND_CPF)
   {
+    cout << "FIND CLOSEST_PRECEDING_FINGER" << endl;
+
     int id = stoi(tokens[1]);
     node_details* cpf = closest_preceding_finger(id);
 
-
-    cout << "FIND  CLOSEST_PRECEDING_FINGER" << endl;
     string response;
     string port_str = to_string(cpf->port);
     string node_id_str = to_string(cpf->node_id);
 
     response += cpf->ip + "`" + port_str + "`" + node_id_str;
 
-    cout << "handleRequest: ";
     cout << "response string is: " << response << endl;
 
     send(connfd, response.c_str(), response.length(), 0);
@@ -556,6 +549,10 @@ void nodeClient::handleRequest(int connfd)
     node_to_notify.node_id = stoi(tokens[3]);
 
     notify(node_to_notify);
+
+    string response = "NOTIFY DONE";
+    send(connfd, response.c_str(), response.length(), 0);
+    close(connfd);
   }
   else if(cmd == GET_FILE_TABLE)
   {
@@ -584,6 +581,84 @@ void nodeClient::handleRequest(int connfd)
     //After transferring the file table, should we delete these entries from current node?
     //because now the new node will store those entries, we don't need it here
     //maybe it helps with mirroring?
+  }
+  else if (cmd == PING)
+  {
+    cout << "Ping received" << endl;
+    string response = "true";
+    send(connfd, response.c_str(), response.length(), 0);
+    close(connfd);
+  }
+  else if (cmd == U_PRED)
+  {
+    cout << "Handling update predecessor" << endl;
+
+    node_details* n = new node_details;
+
+    // reconstructing the node from tokens
+    // see request_update_predecessor
+    n->node_id = stoull(tokens[1]);
+    n->ip = tokens[2];
+    n->port = stoi(tokens[3]);
+
+    this -> predecessor = n; // ???????
+    cout << "Predecessor updated during update predecessor " << endl;
+    cout << "Pred: ID " << predecessor->node_id << " PORT: " << predecessor->port << endl;
+
+    string response = "true";
+    send(connfd, response.c_str(), response.length(), 0);
+    close(connfd);
+  }
+  else if (cmd == U_FIN)
+  {
+    cout << "Handling update_finger request" << endl;
+
+    uint32_t idx;
+    node_details* t = new node_details;
+
+    t->node_id = stoull(tokens[1]);
+    t->ip = tokens[2];
+    t->port = stoi(tokens[3]);
+
+    idx = stoi(tokens[4]);
+
+    update_finger_table(t, idx);
+
+    string response = "true";
+    send(connfd, response.c_str(), response.length(), 0);
+    close(connfd);
+    cout << "Updated finger" << endl;
+  }
+  else if (cmd == R_NODE)
+  {
+    cout << "Handling remove node" << endl;
+
+    node_details* old = new node_details;
+    node_details* replace = new node_details;
+    int i;
+
+    old->node_id = stoull(tokens[1]);
+    old->ip = tokens[2];
+    old->port = stoi(tokens[3]);
+
+    cout << "INDEX: " << i << endl;
+    cout << "OLD: ";
+    printNode(old);
+    cout << "REPLACE: ";
+    printNode(replace);
+
+    i = stoi(tokens[4]);
+
+    replace->node_id = stoull(tokens[5]);
+    replace->ip = tokens[6];
+    replace->port = stoi(tokens[7]);
+
+    remove_node(old, i, replace);
+
+    string response = "true";
+    send(connfd, response.c_str(), response.length(), 0);
+    close(connfd);
+    cout << "DONE REMOVING NODE" << endl;
   }
 }
 
@@ -752,27 +827,78 @@ int nodeClient::getFileID(string fileName)
   return n_id;
 }
 
-node_details* nodeClient::join(node_details* frnd)
+void nodeClient::join(node_details* frnd)
 {
-  predecessor = NULL;
-  node_details* ret = new node_details;
+  // set data to blank
+  for (int i = 0; i < KEY_SIZE; i++)
+    self_data[i] = "";
 
-  ret = getSuccessorNode(my_node_id, frnd);                                                                                                         
+  // initalize the predecessor and successor
+  successor = query_successor(self -> node_id, frnd);
+  self_finger_table[0] = successor;
 
-  return ret;
+  second_successor = fetch_successor(successor);
+
+  cout << "Successor: " << endl;
+  printNode(successor);
+
+  predecessor = fetch_predecessor(successor);
+  cout << "Predecessor: " << endl;
+  printNode(predecessor);
+
+  // TODO error ? should be successor ?
+  request_update_predecessor(self, predecessor);
+
+  // initialize the finger table
+  int product = 1;
+  int i = 0;
+  for (i = 1; i < KEY_SIZE; i++) // n + 2^i , where i: 0->m
+  {
+    uint32_t start_key = (self->node_id + product) % KEY_SPACE;
+
+    if (is_between(start_key, self->node_id, self_finger_table[i-1]->node_id - 1))
+      self_finger_table[i] = self_finger_table[i-1];
+    else
+    {
+      self_finger_table[i] = query_successor(start_key, frnd);
+
+      if (!is_between(self_finger_table[i]->node_id, start_key, self->node_id))
+        self_finger_table[i] = self;
+    }
+
+    product = product * 2;
+
+    cout << "finger " << i << endl;
+    printNode(self_finger_table[i]);
+  }
+
+  cout << "UPDATING OTHER NODES TOO" << endl;
+  // update other nodes too!
+  product = i;
+  for (int i = 0; i < KEY_SIZE; i++)
+  {
+    node_details* p = find_predecessor(self->node_id - product);
+    printNode(p);
+    request_update_finger_table(self, i, p);
+    product = product * 2;
+  }
+
+  cout << "Joining the chord ring" << endl;
+  cout << "ID: " << self->node_id;
+  cout << "Predecessor: " << predecessor->node_id;
+  cout << "Successor: " << successor->node_id;
 }
 
 void nodeClient::notify(node_details new_node)
 {
-  if(predecessor == NULL || 
-    (new_node.node_id > predecessor -> node_id || new_node.node_id < my_node_id))
+  if(predecessor == NULL || (new_node.node_id > predecessor -> node_id || new_node.node_id < my_node_id))
     *predecessor = new_node;
 }
 
 void nodeClient::fix_fingers(void)
 {
-  while (1)
-  {
+  // while (1)
+  // {
     sleep(8);
     cout << "FIX FINGERS" << endl;
     node_details* temp;
@@ -785,7 +911,7 @@ void nodeClient::fix_fingers(void)
 
     (iter -> second)->s_d = temp;
     (iter -> second)->successor = temp->node_id;
-  }
+  // }
 }
 
 //convert the response string containing node info to node_details struct
@@ -803,7 +929,7 @@ node_details* nodeClient::respToNode(string response)
 
   node->ip = tokens[0];
   node->port = stoi(tokens[1], nullptr, 10);
-  node->node_id = stoi(tokens[2], nullptr, 10);
+  node->node_id = stoull(tokens[2], nullptr, 10);
 
   return node;
 }
@@ -826,57 +952,253 @@ node_details* nodeClient::getSuccessorNode(int node_id, node_details* connectToN
   return successorOfId;
 }
 
-node_details* nodeClient::find_successor(int id)
+
+// successor of the given node id, will be the successor of this node's
+// predecessor
+node_details* nodeClient::find_successor(uint32_t id)
 {
   node_details* n_dash = find_predecessor(id);
-  //parse response and populate n_dash_successor
-  // return getSuccessorNode(n_dash.node_id, n_dash); //TBD- Approaches- find n_dash successor in previous call or seperate call 
+
   cout << "find_predecessor("<<id<<")"<<endl;
+
   string command_string = "get_successor`";
   node_details* n_dash_successor = respToNode(sendMessage(command_string, n_dash));
 
   return n_dash_successor;
 }
 
-node_details* nodeClient::find_predecessor(int id)
+node_details* nodeClient::find_predecessor(uint32_t id)
 {
-  bool flag = false;
-
-  // if only node in the network
-  if (my_node_id == successor->node_id)
+  // if only one node
+  if (self->node_id == successor->node_id)
     return self;
 
-  node_details* predNode = self;
-  node_details* succOfPredNode = successor;
+  node_details* n = self;
+  node_details* suc = successor;
 
-  while (id <= predNode->node_id || id > succOfPredNode->node_id)
+  while (!is_between(id, n->node_id + 1, suc->node_id) && id != suc -> node_id)
   {
-    if(flag == false)
-    {
-      predNode = closest_preceding_finger(id); //Searching in its own finger table
-      flag = true;
-    }
-    else
-    {
-      // predNode = sendMessage("closest_preceding_finger(id)");// TO-DO make it RPC Call to temp finger's table
-      string command = "find_cpf`" + to_string(id);
-      predNode = respToNode(sendMessage(command, succOfPredNode));
-    }
+    node_details* n_prime = query_closest_preceding_finger(id, n);
 
-    //find the successor of predNode (in case predNode has changed in while loop)
-    succOfPredNode = getSuccessorNode(predNode->node_id, predNode);
+    n = n_prime;
+    suc = fetch_successor(n);
   }
-  return predNode;
+
+  return n;
 }
 
-node_details* nodeClient::closest_preceding_finger(int id)
+node_details* nodeClient::closest_preceding_finger(uint32_t id)
 {
-  for (auto i = my_fingertable.rbegin(); i != my_fingertable.rend(); i++)
-  {
-    int s_val = (i->second) -> successor;
+  int i;
+  for (int i = KEY_SIZE - 1; i >= 0; i--)
+    if (is_between(self_finger_table[i]->node_id, self->node_id + 1, id - 1))
+      return self_finger_table[i];
 
-    if (s_val > my_node_id && s_val < id)
-      return i->second -> s_d;
-  }
   return self;
+}
+
+
+/**
+ * This method is used to ping the existence of a given node
+ */
+bool nodeClient::ping(node_details* n)
+{
+  // only node in ring
+  if (is_equal(self, n))
+    return true;
+
+  string msg = "ping`";
+
+  string reply = sendMessage(msg, n);
+
+  if (reply == "true")
+    return true;
+  else
+    return false;
+}
+
+
+void nodeClient::keep_alive(void)
+{
+  while (1)
+  {
+    /* Send ping to successor*/
+    if (ping(successor) == false) 
+    {
+      // if ping was unsuccessful means the current successor is not there
+      cout << "Successor has left. Updating...\n";
+
+      // if successor and predecessor are same, then it means only one node is
+      // remaining in the chord
+      if (is_equal(successor, predecessor))
+      {
+        /* Set self to predecessor and successor */
+        predecessor = self;
+        successor = self;
+        second_successor = self;
+
+        /* Set self for fingers */
+        for (int i = 0; i < KEY_SIZE; i++)
+          self_finger_table[i] = self;
+      }
+      else
+      {
+        // need to find the next successor ?? by going reverse in the ring
+        request_update_predecessor(self, second_successor);
+        int product = 1;
+        for (int i = 0; i < KEY_SIZE; i++) 
+        {
+          node_details* p = find_predecessor(self -> node_id - product + 1);
+          request_remove_node(self, i, second_successor, p);
+        }
+      }
+
+      cout << "Finished updating all nodes due to successor leaving\n";
+    }
+    sleep(5);
+  }
+}
+
+// tell the node N to update its predecessor to pred
+void nodeClient::request_update_predecessor(node_details* pred, node_details* n)
+{
+  if (is_equal(n, self))
+  {
+    predecessor = pred;
+    return;
+  }
+
+  string request = "update_predecessor`";
+  request += to_string(pred->node_id) + "`" + pred->ip + "`" + to_string(pred->port);
+
+  string resp = sendMessage(request, n);
+}
+
+
+// wrapper method for executing find_successor on a given node
+node_details* nodeClient::query_successor(uint32_t id, node_details* n)
+{
+  if (is_equal(n, self))
+    return successor;
+
+  string request = "find_successor`";
+  request += to_string(id);
+
+  string response = sendMessage(request, n);
+
+  node_details* retVal = respToNode(response);
+
+  return retVal;
+}
+
+// wrapper method for executing closest_preceding finger on remote node n
+node_details* nodeClient::query_closest_preceding_finger(uint32_t key, node_details* n)
+{
+  if (is_equal(n, self))
+    return closest_preceding_finger(key);
+
+  string request = "find_cpf`" + key;
+
+  string response = sendMessage(request, n);
+
+  node_details* ret_node = respToNode(response);
+
+  return ret_node;
+}
+
+// wrapper function to fetch successor of node n
+node_details* nodeClient::fetch_successor(node_details* n)
+{
+  if (is_equal(n, self))
+    return successor;
+
+  string request = "get_successor`";
+
+  string response = sendMessage(request, n);
+  node_details* ret_node = respToNode(response);
+
+  return ret_node;
+}
+
+// wrapper function to fetch predecessor of node n
+node_details* nodeClient::fetch_predecessor(node_details* n)
+{
+  if (is_equal(n, self))
+    return predecessor;
+
+  string request =  "get_predecessor`";
+  string response = sendMessage(request, n);
+
+  node_details* ret = respToNode(response);
+
+  return ret;
+}
+
+void nodeClient::request_update_finger_table(node_details* s, int i, node_details* n)
+{
+  if (is_equal(n, self))
+  {
+    self_finger_table[i] = s;
+    return;
+  }
+
+  string request = "update_finger`" + to_string(s->node_id) + "`" + s->ip + "`" + to_string(s->port) + "`" + to_string(i);
+
+  string response = sendMessage(request, n);
+}
+
+void nodeClient::update_finger_table(node_details* s, int i)
+{
+  if (s->node_id == self->node_id)
+    return;
+
+  if (is_between(s->node_id, self->node_id + 1, self_finger_table[i]->node_id))
+  {
+    self_finger_table[i] = s;
+
+    if (i == 0)
+    {
+      successor = s;
+      second_successor = fetch_successor(successor);
+    }
+
+    cout << "Finger for index " << i << " is now: " << endl;
+    printNode(s);
+
+    node_details* p = predecessor;
+
+    if (s->node_id != p->node_id)
+      request_update_finger_table(s, i, p);
+  }
+}
+
+void nodeClient::request_remove_node(node_details* old, int i, node_details* replace, node_details* n)
+{
+  if (is_equal(n, self))
+  {
+    remove_node(old, i, replace);
+    return;
+  }
+
+  string old_node = to_string(old->node_id) + "`" + old->ip + "`" + to_string(old->port);
+  string rep_node = to_string(replace->node_id) + "`" + replace->ip + "`" + to_string(replace->port);
+
+  string request = "remove_node`" + old_node + "`"  + to_string(i)  + "`" + rep_node;
+
+  string response = sendMessage(request, n);
+}
+
+
+void nodeClient::remove_node(node_details* old, int i, node_details* replace)
+{
+  if (is_equal(self_finger_table[i], old))
+  {
+    self_finger_table[i] = replace;
+    if (i == 0)
+    {
+      successor = replace;
+      second_successor = fetch_successor(successor);
+    }
+    request_remove_node(old, i, replace, predecessor);
+  }
 }

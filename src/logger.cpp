@@ -105,12 +105,16 @@ int interpret_command(string cmd_str)
     return SHOW;
   else if (cmd_str == "stablize")
     return STABLIZE;
+  else if (cmd_str == "fix")
+    return FIX;
   else if (cmd_str == "exit")
     return EXIT;
   else if (cmd_str == "find_successor")
     return FIND_SUCCESSOR;
   else if (cmd_str == "get_successor")
     return GET_SUCCESSOR;
+  else if (cmd_str == "get_predecessor")
+    return GET_PREDECESSOR;
   else if (cmd_str == "find_cpf")
     return FIND_CPF;
   else if (cmd_str == "find_p_of_s")
@@ -121,6 +125,14 @@ int interpret_command(string cmd_str)
     return GET_FILE_TABLE;
   else if (cmd_str.find("pull[") == 0)
     return GET;
+  else if (cmd_str == "ping")
+    return PING;
+  else if (cmd_str == "update_predecessor")
+    return U_PRED;
+  else if (cmd_str == "update_finger")
+    return U_FIN;
+  else if (cmd_str == "remove_node")
+    return R_NODE;
   else
     return 0;
 }
@@ -184,4 +196,43 @@ int hex2dec(string hex)
       }
     }
     return decnum;
+}
+
+// function to compare if two given nodes are equal
+bool is_equal(node_details* a, node_details* b)
+{
+  if (a->node_id == b->node_id)
+    return true;
+  else
+    return false;
+}
+
+
+void printNode(node_details* n)
+{
+  cout << "IP: " << n->ip << " Port: " << n->port << " ID: "<< n->node_id;
+  cout << endl;
+}
+
+bool is_between(uint32_t key, uint32_t a, uint32_t b)
+{
+  if (key == a || key == b || a == b)
+    return true;
+
+  if (a < key) 
+  {
+    if (b < a)  // wrap around
+      return true;
+    else
+    {
+      if (key < b)
+        return true;
+    }
+  }
+  else
+  {
+    if (key < b && b < a)
+      return true;
+  }
+  return false;
 }

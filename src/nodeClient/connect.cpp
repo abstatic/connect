@@ -45,15 +45,11 @@ int main(int argc, const char *argv[])
   chdir(base_loc.c_str());
 
   // start listening thread
-  thread t(&nodeClient::startListen, connect_node);
-  t.detach();
+  // thread t(&nodeClient::startListen, connect_node);
+  // t.detach();
 
-  // start stablization thread
-  thread s_thread(&nodeClient::stabilize, connect_node);
-  s_thread.detach();
-
-  thread f_thread(&nodeClient::fix_fingers, connect_node);
-  f_thread.detach();
+  thread ka(&nodeClient::keep_alive, connect_node);
+  ka.detach();
 
   string line;
   while (getline(cin, line))
@@ -185,20 +181,35 @@ int main(int argc, const char *argv[])
           auto ft = connect_node.my_fingertable;
           for (auto i = ft.begin(); i != ft.end(); i++)
           {
+            cout << "KEY : " << i -> first << " ";
             ft_struct* curr = i -> second;
             cout << "START: " << i -> first << " ";
             cout << "INTERVAL: " << curr->interval.first << "-" << curr->interval.second << " ";
+            cout << "SUCCESSOR ID: " << curr -> successor << " " ;
             if (curr -> s_d != NULL)
               cout << "ID: " << curr -> s_d -> node_id << " " << curr -> s_d -> port;
             cout << endl;
           }
+
+          cout << "Successor " << connect_node.successor -> node_id << endl;
+
+          if (connect_node.predecessor == NULL)
+            cout << "Predecessor NULL" << endl;
+          else
+            cout << "Predecessor " << connect_node.predecessor -> node_id << endl;
         }
         break;
       case STABLIZE:
         {
+          connect_node.stabilize();
           cout << "STABLIZE" << endl;
         }
         break;
+      case FIX:
+        {
+          connect_node.fix_fingers();
+          cout << "FIX FINGERS" << endl;
+        }
       default:
         cout << "Unknown Command" << endl;
     }

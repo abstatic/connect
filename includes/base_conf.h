@@ -9,32 +9,33 @@
 #ifndef base_h
 #define base_h 1
 
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <cstring>
-#include <errno.h>
-#include <fstream>
-#include <cstdio>
-#include <map>
-#include <unordered_map>
-#include <unordered_set>
-#include <forward_list>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <time.h>
-#include <vector>
 #include <algorithm>
 #include <arpa/inet.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <thread>
-#include <queue>
-#include <openssl/sha.h>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <errno.h>
+#include <forward_list>
+#include <fstream>
+#include <ifaddrs.h>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <openssl/sha.h>
+#include <queue>
+#include <sstream>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <thread>
+#include <time.h>
+#include <unistd.h>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 #endif /* ifndef base_h */
 

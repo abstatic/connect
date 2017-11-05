@@ -21,8 +21,18 @@
 #define FIND_PFS 11
 #define NOTIFY 12
 #define GET_FILE_TABLE 13
+#define FIX 14
+#define PING 15
+#define U_PRED 16
+#define GET_PREDECESSOR 17
+#define U_FIN 18
+#define R_NODE 19
 
-#define LEN 4
+#define LEN 8
+#define LOCAL_IP_ADDRESS "127.0.0.1"
+#define KEY_SPACE 4294967296
+#define KEY_SIZE 32
+#define KEEP_ALIVE 5 // inseconds
 
 using namespace std;
 
@@ -44,7 +54,7 @@ struct node_details
 {
   string ip;
   int port;  
-  int node_id;
+  uint32_t node_id; // unsigned int for storing the 32 bit node id
 };
 
 struct file_details
@@ -67,6 +77,9 @@ int interpret_command(string); // interpret a command string
 string getEnv(const string& var); // getEnvironment variable
 int hex2dec(string);
 string GetHexRepresentation(const unsigned char *, size_t);
+bool is_between(uint32_t key, uint32_t a, uint32_t b);
+bool is_equal(node_details*, node_details*);
+void printNode(node_details*);
 
 extern string base_loc;
 

@@ -33,20 +33,50 @@ public:
   // chord methods
   void getFileTableInfoFromSuccessor(); //new node transfers the file info from successor
   void makeFileTableFrmResponse(string&); //populates my_filetable from string response
-  node_details* find_successor(int);
-  node_details* find_predecessor(int);
-  node_details* closest_preceding_finger(int);
   node_details* lookup_ft(string);
-  node_details* join(node_details*);
+  void join(node_details*);
   node_details* getSuccessorNode(int, node_details*);
   node_details* respToNode(string);
   void notify(node_details);
   void fix_fingers();
   void init_finger_table(node_details);
 
+  // huyouare
+  // join node and initialize chord will be constructor
+  void keep_alive();
+  bool ping(node_details* n);
+  node_details* find_successor(uint32_t);
+  node_details* find_predecessor(uint32_t);
+  node_details* closest_preceding_finger(uint32_t);
 
+  void update_successor(node_details*);
+  void update_predecessor(node_details*);
+  void update_finger_table(node_details*, int);
+
+  void remove_node(node_details*, int, node_details*);
+
+  // remote functions
+  node_details* fetch_successor(node_details*); // fetch successor of the given node
+  node_details* fetch_predecessor(node_details*); // fetch predecessor of the given node
+  node_details* query_successor(uint32_t, node_details*);
+  node_details* query_predecessor(uint32_t, node_details*);
+  node_details* query_closest_preceding_finger(uint32_t, node_details*);
+  void request_update_successor(node_details*, node_details*);
+  void request_update_predecessor(node_details*, node_details*);
+  void request_update_finger_table(node_details*, int, node_details*);
+  node_details* parse_incoming_node(int connfd); // similar to resptonode
+  void request_remove_node(node_details*, int, node_details*, node_details*);
+
+
+  // hashing functions
   int getNodeID(string, int);
   int getFileID(string);
+
+  node_details fetch_query(node_details*, string);
+  node_details send_request(node_details*, string);
+
+  void print_node(node_details*);
+  void println();
 
 
   // variable declarations;
@@ -61,9 +91,13 @@ public:
   map<int, vector<file_details> > my_filetable;
   map<int, ft_struct*> my_fingertable;
 
+  node_details* self_finger_table[KEY_SIZE];
+  string self_data[KEY_SIZE]; // ??? SURE ?? 
+
   node_details* successor;
   node_details* predecessor;
   node_details* self;
+  node_details* second_successor; // for node leaving replacement
 
   Logger* blackbox; // logger for this class
 
