@@ -14,7 +14,8 @@ string base_loc;
 
 int main(int argc, const char *argv[])
 {
-  base_loc = "~/connect";
+  string home_path = getenv("HOME");
+  base_loc = home_path + "/connect";
   // eg. ./connect my_ip my_port friend_ip friend_port
   if (argc < 3)
   {

@@ -19,7 +19,7 @@ public:
 
   // member functions go here
   void registerFile(string); // share file details to trackr
-  void downloadFile(string, string, int); // download a file from other client;
+  void downloadFile(string, string, int, string); // download a file from other client;
   void downloadFile(int, string); // in case search result present
   void searchFile(string); // search a file on trackr;
   void deregisterFile(string); // remove a file from trackr;

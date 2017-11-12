@@ -139,6 +139,10 @@ int interpret_command(string cmd_str)
     return ADD;
   else if (cmd_str == "view")
     return VIEW;
+  else if (cmd_str == "transfer")
+    return TRANSFER;
+  else if (cmd_str == "addfiles")
+    return ADDF;
   else
     return 0;
 }

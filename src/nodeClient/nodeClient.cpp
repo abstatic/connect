@@ -141,7 +141,7 @@ void nodeClient::downloadFile(int hit_no, string outfile)
     int port = stoi(tokens[1]);
     string filepath = tokens[2];
 
-    downloadFile(filepath, ip, port);
+    downloadFile(filepath, ip, port, outfile);
   }
   else
   {
@@ -160,7 +160,7 @@ void nodeClient::downloadFile(int hit_no, string outfile)
  * communicate with the given node
  *
  */
-void nodeClient::downloadFile(string filepath, string n_ip, int n_port)
+void nodeClient::downloadFile(string filepath, string n_ip, int n_port, string outfile)
 {
   // TODO
   // FINGERTABLE LOOKUP TO GET THE RIGHT NODE ID
@@ -200,15 +200,15 @@ void nodeClient::downloadFile(string filepath, string n_ip, int n_port)
       return;
     }
 
-    string download_req_str =  + "download`" + filepath + "`";
+    string download_req_str =  + "pull`" + filepath + "`";
 
     int len = send(downSock, download_req_str.c_str(), strlen(download_req_str.c_str()), 0);
 
     bool success = true;
 
     // TODO get outfile name from the relative path
-    string outfile_path = base_loc + "/" + "random";
-    FILE * fp = fopen("RANDOM", "w");
+    string outfile_path = base_loc + "/" + outfile;
+    FILE * fp = fopen(outfile_path.c_str(), "w");
 
     if (fp)
     {
@@ -277,15 +277,18 @@ void nodeClient::registerFile(string fileSharePath)
  */
 void nodeClient::deregisterFile(string fileSharePath)
 {
-  string cmd_name = "del";
-  string command_str = cmd_name + "`" + fileSharePath;
-  // TODO
-  // string reply = sendMessage(command_str);
+  uint32_t file_key = getFileID(fileSharePath);
+  node_details* resp = find_successor(file_key);
 
-  // if (reply.find("True") != -1)
-    // cout << "Command sent successfully" << endl;
-  // else
-    // cout << reply << endl;
+  string cmd_name = "remove";
+
+  string command = cmd_name + "`" + to_string(file_key) + "`" + fileSharePath + "`" + to_string(self->port)  + "`" + self->ip;
+  string reply = sendMessage(command, resp);
+
+  if (reply == "true")
+    cout << "File Removed" << endl;
+  else
+    cout << "File Not Removed" << endl;
 }
 
 /**
@@ -766,6 +769,105 @@ void nodeClient::handleRequest(int connfd)
     close(connfd);
     cout << "DONE REMOVING NODE" << endl;
   }
+  else if (cmd == TRANSFER)
+  {
+    cout << "Handling transfer of files due to new node" << endl;
+
+    uint32_t preda = stoull(tokens[1]);
+    uint32_t predb = stoull(tokens[2]);
+
+    // iterate over the file table and find is_between entries
+    string reply = "";
+
+    for (auto it = my_filetable.cbegin(); it != my_filetable.cend();)
+    {
+      int key = it->first;
+
+      if (is_between(key, preda, predb))
+      {
+        // add the file details to the response string and remove it from
+        // my_filetable
+        vector<file_details> filetable = it->second;
+        for (auto mirror : filetable)
+        {
+          string thisFile = to_string(key) + ":" + mirror.ip + ":" + to_string(mirror.port) + ":" + mirror.path + "`";
+          reply += thisFile;
+        }
+        it = my_filetable.erase(it);
+      }
+      else
+        ++it;
+    }
+
+    send(connfd, reply.c_str(), reply.length(), 0);
+    close(connfd);
+    cout << "DATA SENT" << endl;
+  }
+  else if (cmd == DEL)
+  {
+    int key = stoi(tokens[1]);
+    string fsp = tokens[2];
+    int port = stoi(tokens[3]);
+    string ip = tokens[4];
+
+    string ret_val = "false";
+    // iterate over the file table to find a matching entry;
+    if (my_filetable.find(key) != my_filetable.end())
+    {
+      vector<file_details> files = my_filetable[key];
+
+      for (auto it = files.begin(); it != files.end(); )
+      {
+        file_details ft = *it;
+        if (ft.port == port && ft.ip == ip)
+        {
+          files.erase(it);
+          ret_val = "true";
+          break;
+        }
+        else
+          it++;
+      }
+      my_filetable[key] = files;
+    }
+    else
+      ret_val = "false";
+
+    send(connfd, ret_val.c_str(), ret_val.length(), 0);
+    close(connfd);
+  }
+  else if (cmd == ADDF)
+  {
+    string files_string = tokens[1];
+
+    vector<string> files;
+    tokenize(files_string, files, "#");
+
+    for (auto f : files)
+    {
+      vector<string> f_d;
+      tokenize(f, f_d, ":");
+
+      int key = stoi(f_d[0]);
+
+      int f_key = stoull(f_d[0]);
+      string ip = f_d[1];
+      int port = stoi(f_d[2]);
+      string path = f_d[3];
+
+      file_details ft;
+      ft.ip = ip;
+      ft.port = port;
+      ft.file_key = f_key;
+      ft.path = path;
+
+      my_filetable[key].push_back(ft);
+    }
+
+    string ret = "done";
+    send(connfd, ret.c_str(), ret.length(), 0);
+    close(connfd);
+  }
 }
 
 /**
@@ -985,6 +1087,33 @@ void nodeClient::join(node_details* frnd)
     // request_update_finger_table(self, i, p);
     // product = product * 2;
   // }
+
+  string cmd = "transfer`" + to_string(predecessor->node_id) + "`" + to_string(successor->node_id);
+  string reply = sendMessage(cmd.c_str(), successor);
+
+  // TODO iterate over the transferred files and store them into own FT
+  vector<string> files;
+  tokenize(reply, files, "`");
+
+  for (auto file : files)
+  {
+    vector<string> fileDetails;
+    tokenize(file,  fileDetails, ":");
+
+    int key = stoi(fileDetails[0]);
+    uint32_t ukey = stoull(fileDetails[0]);
+    string ip = fileDetails[1];
+    int port = stoi(fileDetails[2]);
+    string path = fileDetails[3];
+
+    file_details ft;
+    ft.ip = ip;
+    ft.port = port;
+    ft.path = path;
+    ft.file_key = ukey;
+
+    my_filetable[key].push_back(ft);
+  }
 
   cout << "Joining the chord ring" << endl;
   cout << "ID: " << self->node_id;
@@ -1340,6 +1469,27 @@ void nodeClient::remove_node(node_details* old, int i, node_details* replace)
 
 void nodeClient::bye(void)
 {
+  // we need to transfer the files to the successor
+  string files = "addfiles`";
+
+  for (auto i : my_filetable)
+  {
+    int key = i.first;
+    vector<file_details> f = i.second;
+
+    for (auto k : f)
+    {
+      string filepath = k.path;
+      string ip = k.ip;
+      int port = k.port;
+
+      string thisFile = to_string(key) + ":" + ip + ":" + to_string(port) + ":" + filepath + "#";
+      files += thisFile;
+    }
+  }
+
+  string reply = sendMessage(files, successor);
+
   request_update_predecessor(predecessor, successor);
   request_update_successor(successor, predecessor);
   // TODO predecessor of predecessor update second_sucessor
