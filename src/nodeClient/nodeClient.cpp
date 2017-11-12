@@ -43,6 +43,7 @@ nodeClient::nodeClient(string c_ip, int c_port, string f_ip="", int f_port=0)
     // set self for predecessor and successor
     successor = self;
     predecessor = self;
+    second_successor = self;
 
     // set self for fingers
     for (int i = 0; i < KEY_SIZE; i++)
@@ -136,10 +137,11 @@ void nodeClient::downloadFile(int hit_no, string outfile)
     vector<string> tokens;
     tokenize(current_result, tokens, ":");
 
-    string relative_path = tokens[1];
-    string client_alias = tokens[2];
+    string ip = tokens[0];
+    int port = stoi(tokens[1]);
+    string filepath = tokens[2];
 
-    downloadFile(relative_path);
+    downloadFile(filepath, ip, port);
   }
   else
   {
@@ -158,15 +160,14 @@ void nodeClient::downloadFile(int hit_no, string outfile)
  * communicate with the given node
  *
  */
-void nodeClient::downloadFile(string filepath)
+void nodeClient::downloadFile(string filepath, string n_ip, int n_port)
 {
   // TODO
   // FINGERTABLE LOOKUP TO GET THE RIGHT NODE ID
   // then get the node ip and node port
 
-  node_details* nd = lookup_ft(filepath);
-  int down_port = nd->port;
-  string node_ip = nd->ip;
+  int down_port = n_port;
+  string node_ip = n_ip;
 
   int downSock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -199,7 +200,7 @@ void nodeClient::downloadFile(string filepath)
       return;
     }
 
-    string download_req_str =  + "push`" + filepath + "`";
+    string download_req_str =  + "download`" + filepath + "`";
 
     int len = send(downSock, download_req_str.c_str(), strlen(download_req_str.c_str()), 0);
 
@@ -258,12 +259,13 @@ void nodeClient::downloadFile(string filepath)
  */
 void nodeClient::registerFile(string fileSharePath)
 {
-  string cmd_name = "share";
-  string command = cmd_name + "`" + fileSharePath;
-  // string reply = sendMessage(command);
-  // TODO
-  // if (reply.find("True") != -1)
-  cout << "Command sent successfully" << endl;
+  uint32_t file_key = getFileID(fileSharePath);
+
+  node_details* resp = find_successor(file_key);
+
+  string cmd_name = "add";
+  string command = cmd_name + "`" + to_string(file_key) + "`" + fileSharePath + "`" + to_string(self->port)  + "`" + self->ip;
+  string reply = sendMessage(command, resp);
 }
 
 /**
@@ -295,11 +297,33 @@ void nodeClient::deregisterFile(string fileSharePath)
 void nodeClient::searchFile(string file_name)
 {
   string cmd_name = "search";
-  string command = cmd_name + "`" + file_name + "`";
-  // TODO
-  // string result = sendMessage(command);
 
-  // int file_id = getFileID(file_name);
+  uint32_t file_key = getFileID(file_name);
+
+  node_details* resp = find_successor(file_key);
+
+  string command = cmd_name + "`" + to_string(file_key);
+
+  string reply = sendMessage(command, resp);
+
+  vector<string> res;
+  search_results = res;
+  tokenize(reply, res, "`");
+
+  int len = res.size();
+
+  if (len == 0)
+  {
+    cout << "Found: 0" << endl;
+    haveSearchResults = false;
+  }
+  else
+  {
+    haveSearchResults = true;
+    cout << "FOUND: " << len << endl;
+    for (int i = 0; i < len; i++)
+      printf("[%d] %s\n", i+1, search_results[i].c_str());
+  }
 }
 
 /**
@@ -417,8 +441,6 @@ void nodeClient::handleRequest(int connfd)
     vector<string> tokens;
     tokenize(command_string, tokens, "`");
 
-    cout << command_string << endl;
-
     int cmd = interpret_command(tokens[0]);
 
     // TODO handle the node requests here
@@ -457,13 +479,73 @@ void nodeClient::handleRequest(int connfd)
      else
        printf("Error, couldn't open file [%s] to send!\n", full_file_path.c_str());
    }
+    else if (cmd == ADD)
+    {
+      cout << "ADDING FILE" << endl;
+
+      uint32_t file_key = stoull(tokens[1]);
+      string fileSharePath = tokens[2];
+      int server_port = stoi(tokens[3]);
+      string server_ip = tokens[4];
+
+      file_details ft;
+      ft.ip = server_ip;
+      ft.port = server_port;
+      ft.path = fileSharePath;
+      ft.file_key = file_key;
+
+      my_filetable[file_key].push_back(ft);
+
+      string response = "true";
+      send(connfd, response.c_str(), response.length(), 0);
+      close(connfd);
+    }
+    else if (cmd == SEARCH)
+    {
+      cout << "SEARCHING FOR FILE" << endl;
+
+      int file_key = stoi(tokens[1]);
+
+      auto it = my_filetable.find(file_key);
+
+      if (it != my_filetable.end())
+      {
+        vector<file_details> matching = it->second;
+
+        string result;
+
+        for (auto s : matching)
+        {
+          string line;
+
+          string ip = s.ip;
+          string port = to_string(s.port);
+          string path = s.path;
+          string file_key = to_string(s.file_key);
+
+          line = ip + ":" + port + ":" + path + ":" + file_key + "`";
+
+          result += line;
+        }
+
+        send(connfd, result.c_str(), result.length(), 0);
+        close(connfd);
+      }
+      else
+      {
+        string response = "";
+        send(connfd, response.c_str(), response.length(), 0);
+        close(connfd);
+      }
+
+    }
    else if (cmd == FIND_SUCCESSOR)
    {
 
     cout << "FIND SUCCESSOR" << endl;
     string response;
 
-    int id = stoi(tokens[1]);
+    uint32_t id = stoull(tokens[1]);
     cout << "REQUEST FOR SUCCESSOR OF KEY: " << id << endl;
     node_details* succ = find_successor(id);
 
@@ -510,7 +592,7 @@ void nodeClient::handleRequest(int connfd)
   {
     cout << "FIND CLOSEST_PRECEDING_FINGER" << endl;
 
-    int id = stoi(tokens[1]);
+    uint32_t id = stoull(tokens[1]);
     node_details* cpf = closest_preceding_finger(id);
 
     string response;
@@ -584,7 +666,29 @@ void nodeClient::handleRequest(int connfd)
   }
   else if (cmd == PING)
   {
-    cout << "Ping received" << endl;
+    string response = "true";
+    send(connfd, response.c_str(), response.length(), 0);
+    close(connfd);
+  }
+  else if (cmd == U_SUCC)
+  {
+    cout << "Handling udpate successor" << endl;
+
+    node_details* n = new node_details;
+
+    // reconstructing the node from tokens
+    // see request_update_predecessor
+    n->node_id = stoull(tokens[1]);
+    n->ip = tokens[2];
+    n->port = stoi(tokens[3]);
+
+    this -> successor = n; // ???????
+    self_finger_table[0] = n;
+    second_successor = fetch_successor(successor);
+
+    cout << "Successor updated during update successor " << endl;
+    cout << "Succ: ID " << successor->node_id << " PORT: " << successor->port << endl;
+
     string response = "true";
     send(connfd, response.c_str(), response.length(), 0);
     close(connfd);
@@ -604,6 +708,8 @@ void nodeClient::handleRequest(int connfd)
     this -> predecessor = n; // ???????
     cout << "Predecessor updated during update predecessor " << endl;
     cout << "Pred: ID " << predecessor->node_id << " PORT: " << predecessor->port << endl;
+
+    second_successor = fetch_successor(successor); // new added
 
     string response = "true";
     send(connfd, response.c_str(), response.length(), 0);
@@ -673,7 +779,7 @@ void nodeClient::handleRequest(int connfd)
  */
 string nodeClient::sendMessage(string message, node_details* nd)
 {
-  cout << "Sending out the message: " << message << endl;
+  // cout << "Sending out the message: " << message << endl;
 
   int node_port = nd->port;
   string node_ip = nd->ip;
@@ -747,7 +853,6 @@ string nodeClient::sendMessage(string message, node_details* nd)
     return "Fail";
   }
 
-  cout << "Waiting for reply" << endl;
   // TODO: Add the code to receive the response from peer server
   // response will contain a string containing ip, port and identifier
   int i = 0;
@@ -761,8 +866,6 @@ string nodeClient::sendMessage(string message, node_details* nd)
   } while (bytes_read != 0);
 
   string s(recvBuff,0, i-1); // #Hackey DANGEROUS
-
-  cout << "recv: " << s << endl;
 
   close(node_sockfd);
   return s;
@@ -789,9 +892,9 @@ node_details* nodeClient::lookup_ft(string command)
  *
  * @return: decimal index value
  */
-int nodeClient::getNodeID(string ip, int port)
+uint32_t nodeClient::getNodeID(string ip, int port)
 {
-  string op = ip + to_string(port);
+  string op = ip + ":"  + to_string(port);
   unsigned char hash[SHA_DIGEST_LENGTH];
 
   const unsigned char* s = reinterpret_cast<const unsigned char *>(op.c_str());
@@ -799,7 +902,7 @@ int nodeClient::getNodeID(string ip, int port)
 
   string hex = GetHexRepresentation(hash, SHA_DIGEST_LENGTH);
 
-  int n_id = hex2dec(hex);
+  uint32_t n_id = hex2dec(hex);
 
   return n_id;
 }
@@ -811,20 +914,19 @@ int nodeClient::getNodeID(string ip, int port)
  * @param fileName: fileName to be hashed
  * @return: decimal index value
  */
-int nodeClient::getFileID(string fileName)
+uint32_t nodeClient::getFileID(string fileName)
 {
   string op = fileName;
   unsigned char hash[SHA_DIGEST_LENGTH];
 
   const unsigned char* s = reinterpret_cast<const unsigned char *>(op.c_str());
-  cout << strlen(op.c_str()) << endl;
   SHA1(s,  strlen(op.c_str()), hash);
 
   string hex = GetHexRepresentation(hash, SHA_DIGEST_LENGTH);
 
-  int n_id = hex2dec(hex);
+  uint32_t f_id = hex2dec(hex);
 
-  return n_id;
+  return f_id;
 }
 
 void nodeClient::join(node_details* frnd)
@@ -837,8 +939,6 @@ void nodeClient::join(node_details* frnd)
   successor = query_successor(self -> node_id, frnd);
   self_finger_table[0] = successor;
 
-  second_successor = fetch_successor(successor);
-
   cout << "Successor: " << endl;
   printNode(successor);
 
@@ -847,11 +947,14 @@ void nodeClient::join(node_details* frnd)
   printNode(predecessor);
 
   // TODO error ? should be successor ?
-  request_update_predecessor(self, predecessor);
+  request_update_successor(self, predecessor);
+  request_update_predecessor(self, successor);
+
+  second_successor = fetch_successor(successor);
 
   // initialize the finger table
-  int product = 1;
   int i = 0;
+  int product = 1;
   for (i = 1; i < KEY_SIZE; i++) // n + 2^i , where i: 0->m
   {
     uint32_t start_key = (self->node_id + product) % KEY_SPACE;
@@ -874,14 +977,14 @@ void nodeClient::join(node_details* frnd)
 
   cout << "UPDATING OTHER NODES TOO" << endl;
   // update other nodes too!
-  product = i;
-  for (int i = 0; i < KEY_SIZE; i++)
-  {
-    node_details* p = find_predecessor(self->node_id - product);
-    printNode(p);
-    request_update_finger_table(self, i, p);
-    product = product * 2;
-  }
+  product = 1;
+  // for (int i = 0; i < KEY_SIZE; i++)
+  // {
+    // node_details* p = find_predecessor(self->node_id - product);
+    // printNode(p);
+    // request_update_finger_table(self, i, p);
+    // product = product * 2;
+  // }
 
   cout << "Joining the chord ring" << endl;
   cout << "ID: " << self->node_id;
@@ -976,25 +1079,40 @@ node_details* nodeClient::find_predecessor(uint32_t id)
   node_details* n = self;
   node_details* suc = successor;
 
-  while (!is_between(id, n->node_id + 1, suc->node_id) && id != suc -> node_id)
-  {
+ // while (!is_between(id, n->node_id + 1, suc->node_id) && id != suc -> node_id)
+ // if(is_between(id, n->node_id+1, suc->node_id)) 
+  // {
     node_details* n_prime = query_closest_preceding_finger(id, n);
 
     n = n_prime;
-    suc = fetch_successor(n);
-  }
+    // suc = fetch_successor(n);
+  // }
 
   return n;
 }
 
 node_details* nodeClient::closest_preceding_finger(uint32_t id)
 {
-  int i;
-  for (int i = KEY_SIZE - 1; i >= 0; i--)
-    if (is_between(self_finger_table[i]->node_id, self->node_id + 1, id - 1))
-      return self_finger_table[i];
+  node_details* temp1 = successor;
+  node_details* temp2 = self;
 
-  return self;
+  // int i;
+  // for (int i = KEY_SIZE - 1; i >= 0; i--)
+    // if (is_between(self_finger_table[i]->node_id, self->node_id + 1, id - 1))
+      // return self_finger_table[i];
+
+  // return self;
+
+  while(true)
+  {
+    if (is_between(id, temp2->node_id, temp1->node_id))
+      return temp2;
+    else
+    {
+      temp2 = temp1;
+      temp1 = fetch_successor(temp1);
+    }
+  }
 }
 
 
@@ -1050,6 +1168,7 @@ void nodeClient::keep_alive(void)
         {
           node_details* p = find_predecessor(self -> node_id - product + 1);
           request_remove_node(self, i, second_successor, p);
+          product = product * 2; // ERROR
         }
       }
 
@@ -1074,6 +1193,23 @@ void nodeClient::request_update_predecessor(node_details* pred, node_details* n)
   string resp = sendMessage(request, n);
 }
 
+// tell the node N to update its successor to SUCC
+void nodeClient::request_update_successor(node_details* succ, node_details* n)
+{
+  if (is_equal(n, self))
+  {
+    successor = succ;
+    self_finger_table[0] = successor;
+    second_successor = fetch_successor(successor);
+    return;
+  }
+
+  string request = "update_successor`";
+
+  request += to_string(succ->node_id) + "`" + succ->ip + "`" + to_string(succ->port);
+
+  string resp = sendMessage(request, n);
+}
 
 // wrapper method for executing find_successor on a given node
 node_details* nodeClient::query_successor(uint32_t id, node_details* n)
@@ -1115,9 +1251,8 @@ node_details* nodeClient::fetch_successor(node_details* n)
   string request = "get_successor`";
 
   string response = sendMessage(request, n);
-  node_details* ret_node = respToNode(response);
 
-  return ret_node;
+  return respToNode(response);
 }
 
 // wrapper function to fetch predecessor of node n
@@ -1201,4 +1336,11 @@ void nodeClient::remove_node(node_details* old, int i, node_details* replace)
     }
     request_remove_node(old, i, replace, predecessor);
   }
+}
+
+void nodeClient::bye(void)
+{
+  request_update_predecessor(predecessor, successor);
+  request_update_successor(successor, predecessor);
+  // TODO predecessor of predecessor update second_sucessor
 }

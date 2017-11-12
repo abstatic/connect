@@ -19,7 +19,7 @@ public:
 
   // member functions go here
   void registerFile(string); // share file details to trackr
-  void downloadFile(string); // download a file from other client;
+  void downloadFile(string, string, int); // download a file from other client;
   void downloadFile(int, string); // in case search result present
   void searchFile(string); // search a file on trackr;
   void deregisterFile(string); // remove a file from trackr;
@@ -69,20 +69,19 @@ public:
 
 
   // hashing functions
-  int getNodeID(string, int);
-  int getFileID(string);
+  uint32_t getNodeID(string, int);
+  uint32_t getFileID(string);
 
   node_details fetch_query(node_details*, string);
   node_details send_request(node_details*, string);
 
   void print_node(node_details*);
-  void println();
-
+  void bye(void);
 
   // variable declarations;
   string my_ip; // the ip of the client
   int my_port; // port number of client
-  int my_node_id;
+  uint32_t my_node_id;
   bool haveSearchResults; // bool indicating if search results are there or not
   vector <string> search_results; // each string is a search result
   queue<string> requests; // queue for pending requests

@@ -27,11 +27,13 @@
 #define GET_PREDECESSOR 17
 #define U_FIN 18
 #define R_NODE 19
+#define U_SUCC 20
+#define ADD 21
 
 #define LEN 8
 #define LOCAL_IP_ADDRESS "127.0.0.1"
-#define KEY_SPACE 4294967296
-#define KEY_SIZE 32
+#define KEY_SPACE 16
+#define KEY_SIZE 4
 #define KEEP_ALIVE 5 // inseconds
 
 using namespace std;
@@ -62,6 +64,7 @@ struct file_details
   string ip;
   int port;
   string path;
+  uint32_t file_key;
 };
 
 struct ft_struct

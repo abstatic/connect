@@ -48,7 +48,7 @@ int main(int argc, const char *argv[])
   // thread t(&nodeClient::startListen, connect_node);
   // t.detach();
 
-  thread ka(&nodeClient::keep_alive, connect_node);
+  thread ka(&nodeClient::keep_alive, &connect_node);
   ka.detach();
 
   string line;
@@ -77,7 +77,7 @@ int main(int argc, const char *argv[])
             break;
           }
           // if we are downloading after a search
-          if (tokens[0][3] == '[')
+          if (tokens[0][4] == '[')
           {
             connect_node.blackbox -> record("Get command for: " + tokens[0]  + " outfile  " + tokens[1]);
 
@@ -93,8 +93,8 @@ int main(int argc, const char *argv[])
               sanitize(hit_n, ']');
               sanitize(hit_n, 'p');
               sanitize(hit_n, 'u');
-              sanitize(hit_n, 's');
-              sanitize(hit_n, 'h');
+              sanitize(hit_n, 'l');
+              sanitize(hit_n, 'l');
 
               int hit_no = stoi(hit_n);
 
@@ -172,24 +172,16 @@ int main(int argc, const char *argv[])
       case EXIT:
         {
           cout << "EXIT" << endl;
+          connect_node.bye();
+          exit(0);
         }
         break;
       case SHOW:
         {
           cout << "SHOW" << endl;
           // TODO SHOT FT AND FILE MAP
-          auto ft = connect_node.my_fingertable;
-          for (auto i = ft.begin(); i != ft.end(); i++)
-          {
-            cout << "KEY : " << i -> first << " ";
-            ft_struct* curr = i -> second;
-            cout << "START: " << i -> first << " ";
-            cout << "INTERVAL: " << curr->interval.first << "-" << curr->interval.second << " ";
-            cout << "SUCCESSOR ID: " << curr -> successor << " " ;
-            if (curr -> s_d != NULL)
-              cout << "ID: " << curr -> s_d -> node_id << " " << curr -> s_d -> port;
-            cout << endl;
-          }
+          for (int i = 0; i < KEY_SIZE; i++)
+            printNode(connect_node.self_finger_table[i]);
 
           cout << "Successor " << connect_node.successor -> node_id << endl;
 
@@ -197,6 +189,9 @@ int main(int argc, const char *argv[])
             cout << "Predecessor NULL" << endl;
           else
             cout << "Predecessor " << connect_node.predecessor -> node_id << endl;
+          printNode(connect_node.self);
+          cout << "Second successor: ";
+          printNode(connect_node.second_successor);
         }
         break;
       case STABLIZE:

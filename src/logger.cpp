@@ -133,6 +133,10 @@ int interpret_command(string cmd_str)
     return U_FIN;
   else if (cmd_str == "remove_node")
     return R_NODE;
+  else if (cmd_str == "update_successor")
+    return U_SUCC;
+  else if (cmd_str == "add")
+    return ADD;
   else
     return 0;
 }
@@ -167,7 +171,7 @@ string GetHexRepresentation(const unsigned char * Bytes, size_t Length)
 int hex2dec(string hex)
 {
     string hexstr;
-    int length = 4;
+    int length = 1;
     const int base = 16;     // Base of Hexadecimal Number
     int decnum = 0;
     int i;
