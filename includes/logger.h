@@ -29,6 +29,7 @@
 #define R_NODE 19
 #define U_SUCC 20
 #define ADD 21
+#define VIEW 22
 
 #define LEN 8
 #define LOCAL_IP_ADDRESS "127.0.0.1"

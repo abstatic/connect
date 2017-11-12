@@ -137,6 +137,8 @@ int interpret_command(string cmd_str)
     return U_SUCC;
   else if (cmd_str == "add")
     return ADD;
+  else if (cmd_str == "view")
+    return VIEW;
   else
     return 0;
 }

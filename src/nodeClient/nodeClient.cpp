@@ -208,7 +208,7 @@ void nodeClient::downloadFile(string filepath, string n_ip, int n_port)
 
     // TODO get outfile name from the relative path
     string outfile_path = base_loc + "/" + "random";
-    FILE * fp = fopen(outfile_path.c_str(), "w");
+    FILE * fp = fopen("RANDOM", "w");
 
     if (fp)
     {
@@ -307,8 +307,8 @@ void nodeClient::searchFile(string file_name)
   string reply = sendMessage(command, resp);
 
   vector<string> res;
-  search_results = res;
   tokenize(reply, res, "`");
+  search_results = res;
 
   int len = res.size();
 

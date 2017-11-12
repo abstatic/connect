@@ -117,7 +117,6 @@ int main(int argc, const char *argv[])
             sanitize(filepath, '\\');
 
             connect_node.blackbox -> record("Get command on path " + filepath);
-            connect_node.downloadFile(filepath);
           }
         }
         break;
@@ -205,6 +204,18 @@ int main(int argc, const char *argv[])
           connect_node.fix_fingers();
           cout << "FIX FINGERS" << endl;
         }
+        break;
+      case VIEW:
+        {
+          for (auto i : connect_node.my_filetable)
+          {
+            cout << "KEY: " << i.first << endl;
+            for (auto j : i.second)
+              cout << "IP: " <<  i.second[0].ip << " " << i.second[0].port << " " << i.second[0].path << endl;
+            cout << "--------" << endl;
+          }
+        }
+        break;
       default:
         cout << "Unknown Command" << endl;
     }

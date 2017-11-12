@@ -41,7 +41,6 @@ public:
   void fix_fingers();
   void init_finger_table(node_details);
 
-  // huyouare
   // join node and initialize chord will be constructor
   void keep_alive();
   bool ping(node_details* n);
