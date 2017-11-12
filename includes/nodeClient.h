@@ -65,6 +65,7 @@ public:
   void request_update_finger_table(node_details*, int, node_details*);
   node_details* parse_incoming_node(int connfd); // similar to resptonode
   void request_remove_node(node_details*, int, node_details*, node_details*);
+  void request_update_second_successor(node_details*);
 
 
   // hashing functions

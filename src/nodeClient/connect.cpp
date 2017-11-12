@@ -171,18 +171,12 @@ int main(int argc, const char *argv[])
         break;
       case EXIT:
         {
-          cout << "EXIT" << endl;
           connect_node.bye();
           exit(0);
         }
         break;
       case SHOW:
         {
-          cout << "SHOW" << endl;
-          // TODO SHOT FT AND FILE MAP
-          for (int i = 0; i < KEY_SIZE; i++)
-            printNode(connect_node.self_finger_table[i]);
-
           cout << "Successor " << connect_node.successor -> node_id << endl;
 
           if (connect_node.predecessor == NULL)

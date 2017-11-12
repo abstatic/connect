@@ -143,6 +143,8 @@ int interpret_command(string cmd_str)
     return TRANSFER;
   else if (cmd_str == "addfiles")
     return ADDF;
+  else if (cmd_str == "update_second_successor")
+    return U_SSUCC;
   else
     return 0;
 }

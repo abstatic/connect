@@ -828,7 +828,11 @@ void nodeClient::handleRequest(int connfd)
         else
           it++;
       }
-      my_filetable[key] = files;
+
+      if (files.size() == 0)
+        my_filetable.erase(key);
+      else
+        my_filetable[key] = files;
     }
     else
       ret_val = "false";
@@ -864,6 +868,13 @@ void nodeClient::handleRequest(int connfd)
       my_filetable[key].push_back(ft);
     }
 
+    string ret = "done";
+    send(connfd, ret.c_str(), ret.length(), 0);
+    close(connfd);
+  }
+  else if (cmd == U_SSUCC)
+  {
+    second_successor = fetch_successor(successor);
     string ret = "done";
     send(connfd, ret.c_str(), ret.length(), 0);
     close(connfd);
@@ -1053,6 +1064,9 @@ void nodeClient::join(node_details* frnd)
   request_update_predecessor(self, successor);
 
   second_successor = fetch_successor(successor);
+
+  node_details* pred_pred = fetch_predecessor(predecessor);
+  // request_update_second_successor(pred_pred);
 
   // initialize the finger table
   int i = 0;
@@ -1340,6 +1354,20 @@ void nodeClient::request_update_successor(node_details* succ, node_details* n)
   string resp = sendMessage(request, n);
 }
 
+void nodeClient::request_update_second_successor(node_details* n)
+{
+  if (is_equal(n, self))
+  {
+    self_finger_table[0] = successor;
+    second_successor = fetch_successor(successor);
+    return;
+  }
+
+  string request = "update_second_successor`";
+
+  string resp = sendMessage(request, n);
+}
+
 // wrapper method for executing find_successor on a given node
 node_details* nodeClient::query_successor(uint32_t id, node_details* n)
 {
@@ -1470,25 +1498,27 @@ void nodeClient::remove_node(node_details* old, int i, node_details* replace)
 void nodeClient::bye(void)
 {
   // we need to transfer the files to the successor
-  string files = "addfiles`";
-
-  for (auto i : my_filetable)
+  if (my_filetable.size() != 0)
   {
-    int key = i.first;
-    vector<file_details> f = i.second;
+    string files = "addfiles`";
 
-    for (auto k : f)
+    for (auto i : my_filetable)
     {
-      string filepath = k.path;
-      string ip = k.ip;
-      int port = k.port;
+      int key = i.first;
+      vector<file_details> f = i.second;
 
-      string thisFile = to_string(key) + ":" + ip + ":" + to_string(port) + ":" + filepath + "#";
-      files += thisFile;
+      for (auto k : f)
+      {
+        string filepath = k.path;
+        string ip = k.ip;
+        int port = k.port;
+
+        string thisFile = to_string(key) + ":" + ip + ":" + to_string(port) + ":" + filepath + "#";
+        files += thisFile;
+      }
     }
+    string reply = sendMessage(files, successor);
   }
-
-  string reply = sendMessage(files, successor);
 
   request_update_predecessor(predecessor, successor);
   request_update_successor(successor, predecessor);

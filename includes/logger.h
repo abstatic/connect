@@ -32,6 +32,7 @@
 #define VIEW 22
 #define TRANSFER 23
 #define ADDF 24
+#define U_SSUCC 25
 
 #define LEN 8
 #define LOCAL_IP_ADDRESS "127.0.0.1"
