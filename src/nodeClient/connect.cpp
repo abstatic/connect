@@ -206,7 +206,9 @@ int main(int argc, const char *argv[])
           {
             cout << "KEY: " << i.first << endl;
             for (auto j : i.second)
-              cout << "IP: " <<  i.second[0].ip << " " << i.second[0].port << " " << i.second[0].path << endl;
+            {
+                cout << "IP: " <<  j.ip << " " << j.port << " " << j.path << endl;
+            }
             cout << "--------" << endl;
           }
         }
